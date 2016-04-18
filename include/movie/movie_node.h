@@ -19,7 +19,7 @@ extern "C" {
 		AE_MOVIE_NODE_ANIMATE_BEGIN,
 		AE_MOVIE_NODE_ANIMATE_PROCESS,
 		AE_MOVIE_NODE_ANIMATE_END
-	};
+	} aeMovieNodeAnimationStateEnum;
 
 	typedef struct aeMovieNodeCamera
 	{
