@@ -24,8 +24,8 @@ void delete_movie_data( const aeMovieInstance * _instance, const aeMovieData * _
 	uint32_t resource_count = _movieData->resource_count;
 
 	for( const aeMovieResource
-		**it_resource = _movieData->resources,
-		**it_resource_end = _movieData->resources + _movieData->resource_count;
+		*const * it_resource = _movieData->resources,
+		*const * it_resource_end = _movieData->resources + _movieData->resource_count;
 	it_resource != it_resource_end;
 	++it_resource )
 	{ 
@@ -437,6 +437,8 @@ static aeMovieResult __load_movie_data_layer( const aeMovieData * _movieData, co
 
 	_layer->parent_index = parent_index;
 
+	_layer->reverse_time = READB( _stream );
+
 	READ( _stream, _layer->start_time );
 	READ( _stream, _layer->in_time );
 	READ( _stream, _layer->out_time );
@@ -448,7 +450,7 @@ static aeMovieResult __load_movie_data_layer( const aeMovieData * _movieData, co
 	}
 
 	READ( _stream, _layer->blend_mode );	
-	READ( _stream, _layer->threeD );
+	_layer->threeD = READB( _stream );
 	READ( _stream, _layer->params );
 
 	_layer->play_count = READZ( _stream );

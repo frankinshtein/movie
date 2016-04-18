@@ -178,12 +178,9 @@ static void __setup_movie_node_relative( aeMovieNode * _nodes, uint32_t * _itera
 		switch( layer->type )
 		{
 		case AE_MOVIE_LAYER_TYPE_MOVIE:
-			{
-				__setup_movie_node_relative( _nodes, _iterator, layer->sub_composition, node );
-			}break;
 		case AE_MOVIE_LAYER_TYPE_SUB_MOVIE:
 			{
-				__setup_movie_node_relative( _nodes, _iterator, layer->sub_composition, node );
+				__setup_movie_node_relative( _nodes, _iterator, layer->sub_composition, node );				
 			}break;
 		default:
 			{
@@ -218,7 +215,7 @@ static void __setup_movie_node_relative( aeMovieNode * _nodes, uint32_t * _itera
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-static void __setup_movie_node_time( aeMovieNode * _nodes, uint32_t * _iterator, const aeMovieCompositionData * _compositionData, aeMovieNode * _parent, float _stretch )
+static void __setup_movie_node_time( aeMovieNode * _nodes, uint32_t * _iterator, const aeMovieCompositionData * _compositionData, aeMovieNode * _parent, float _stretch, float _startTime )
 {
 	for( const aeMovieLayerData
 		*it_layer = _compositionData->layers,
@@ -238,22 +235,20 @@ static void __setup_movie_node_time( aeMovieNode * _nodes, uint32_t * _iterator,
 		}
 		else
 		{
-			node->in_time = _parent->in_time + layer->in_time * _stretch;
-			node->out_time = _parent->in_time + layer->out_time * _stretch;
+			node->in_time = _parent->in_time + layer->in_time * _stretch - _startTime;
+			node->out_time = _parent->in_time + layer->out_time * _stretch - _startTime;
 			node->stretch = _stretch;
 		}
-
-		float to_stretch = _stretch * layer->stretch;
 
 		switch( layer->type )
 		{
 		case AE_MOVIE_LAYER_TYPE_MOVIE:
-			{
-				__setup_movie_node_time( _nodes, _iterator, layer->sub_composition, node, to_stretch );
-			}break;
 		case AE_MOVIE_LAYER_TYPE_SUB_MOVIE:
 			{
-				__setup_movie_node_time( _nodes, _iterator, layer->sub_composition, node, to_stretch );
+				float to_stretch = _stretch * layer->stretch;
+				float to_startTime = _startTime + layer->start_time;
+
+				__setup_movie_node_time( _nodes, _iterator, layer->sub_composition, node, to_stretch, to_startTime );
 			}break;
 		default:
 			{
@@ -293,13 +288,10 @@ static void __setup_movie_node_blend_mode( aeMovieNode * _nodes, uint32_t * _ite
 		switch( layer->type )
 		{
 		case AE_MOVIE_LAYER_TYPE_MOVIE:
-			{
-				__setup_movie_node_blend_mode( _nodes, _iterator, layer->sub_composition, node, composition_blend_mode );
-			}break;
 		case AE_MOVIE_LAYER_TYPE_SUB_MOVIE:
 			{
-				__setup_movie_node_blend_mode( _nodes, _iterator, layer->sub_composition, node, composition_blend_mode );
-			}break;
+				__setup_movie_node_blend_mode( _nodes, _iterator, layer->sub_composition, node, composition_blend_mode );				
+			}break;		
 		default:
 			{
 			}break;
@@ -375,16 +367,14 @@ static uint32_t __get_movie_composition_data_node_count( const aeMovieData * _mo
 		switch( layer_type )
 		{
 		case AE_MOVIE_LAYER_TYPE_MOVIE:
-			{
-				uint32_t movie_layer_count = __get_movie_composition_data_node_count( _movie, layer->sub_composition );
-
-				count += movie_layer_count;
-			}break;
 		case AE_MOVIE_LAYER_TYPE_SUB_MOVIE:
 			{
 				uint32_t movie_layer_count = __get_movie_composition_data_node_count( _movie, layer->sub_composition );
 
 				count += movie_layer_count;
+			}break;
+		default:
+			{
 			}break;
 		}
 	}
@@ -457,7 +447,7 @@ aeMovieComposition * create_movie_composition( const aeMovieData * _movieData, c
 
 	uint32_t node_time_iterator = 0;
 
-	__setup_movie_node_time( composition->nodes, &node_time_iterator, _compositionData, AE_NULL, 1.f );
+	__setup_movie_node_time( composition->nodes, &node_time_iterator, _compositionData, AE_NULL, 1.f, 0.f );
 
 	uint32_t node_blend_mode_iterator = 0;
 
@@ -652,9 +642,11 @@ void __update_movie_composition_node( aeMovieComposition * _composition, uint32_
 
 		node->current_time = current_time;
 
-		uint32_t frameId = (uint32_t)(current_time / node->stretch * frameDurationInv);
+		float frame_time = (current_time) / node->stretch * frameDurationInv;
 
-		float t = current_time / node->stretch * frameDurationInv - (float)frameId;
+		uint32_t frameId = (uint32_t)frame_time;
+
+		float t = frame_time - (float)frameId;
 
 		if( _composition->loop == AE_TRUE && (node->layer->params & AE_MOVIE_LAYER_PARAM_LOOP) )
 		{
@@ -879,7 +871,16 @@ void compute_movie_mesh( const aeMovieRenderContext * _context, uint32_t _index,
 
 			float frameDuration = resource_sequence->frameDuration;
 
-			uint32_t frame_sequence = (uint32_t)(node->current_time / frameDuration);
+			uint32_t frame_sequence;
+
+			if( layer->reverse_time == AE_TRUE )
+			{
+				frame_sequence = (uint32_t)((node->out_time - node->in_time - node->current_time) / frameDuration);
+			}
+			else
+			{
+				frame_sequence = (uint32_t)(node->current_time / frameDuration);
+			}
 
 			frame_sequence %= resource_sequence->image_count;
 
@@ -887,7 +888,7 @@ void compute_movie_mesh( const aeMovieRenderContext * _context, uint32_t _index,
 
 			_vertices->resource_type = resource_image->type;
 			_vertices->resource_data = resource_image->data;
-
+	
 			float offset_x = resource_image->offset_x;
 			float offset_y = resource_image->offset_y;
 
