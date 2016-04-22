@@ -34,12 +34,18 @@ extern "C" {
 
 		float in_time;
 		float out_time;
+
+		uint32_t in_frame;
+		uint32_t out_frame;
+
 		float stretch;
 		float current_time;
 
 		ae_bool_t active;
-		uint32_t animate;
+		ae_bool_t loop;
 
+		uint32_t animate;
+		
 		uint32_t matrix_revision;
 		ae_matrix4_t matrix;
 
@@ -53,32 +59,44 @@ extern "C" {
 	} aeMovieNode;
 
 	typedef void * (*ae_movie_composition_node_camera_provider_t)(const ae_string_t _name, const ae_vector3_t _position, const ae_vector3_t _direction, float _fov, float _width, float _height, void * _data);
-	typedef void * (*ae_movie_composition_node_video_provider_t)(const aeMovieLayerData * _layerData, const aeMovieResourceVideo * _resource, void * _data);
-	typedef void * (*ae_movie_composition_node_sound_provider_t)(const aeMovieLayerData * _layerData, const aeMovieResourceSound * _resource, void * _data);
-	typedef void * (*ae_movie_composition_node_particle_provider_t)(const aeMovieLayerData * _layerData, const aeMovieResourceParticle * _resource, void * _data);
-	typedef void * (*ae_movie_composition_node_socket_provider_t)(const aeMovieLayerData * _layerData, const aeMovieResourceSocket * _resource, void * _data);
-	typedef void * (*ae_movie_composition_node_slot_provider_t)(const aeMovieLayerData * _layerData, void * _data);
-
+	
+	typedef void * (*ae_movie_composition_node_provider_t)(const aeMovieLayerData * _layerData, const aeMovieResource * _resource, void * _data);
+	
 	typedef void( *ae_movie_node_animate_update_t )(const void * _element, uint32_t _type, const ae_matrix4_t _matrix, float _opacity, void * _data);
 	typedef void( *ae_movie_node_animate_begin_t )(const void * _element, uint32_t _type, float _offset, void * _data);
 	typedef void( *ae_movie_node_animate_end_t )(const void * _element, uint32_t _type, void * _data);
 
 	typedef void( *ae_movie_composition_node_destroyer_t )(const void * _element, uint32_t _type, void * _data);
 
+	typedef void( *ae_movie_node_event_t )(const void * _element, const ae_matrix4_t _matrix, float _opacity, void * _data );
+
+	typedef enum
+	{
+		AE_MOVIE_COMPOSITION_PLAY,
+		AE_MOVIE_COMPOSITION_STOP,
+		AE_MOVIE_COMPOSITION_PAUSE,
+		AE_MOVIE_COMPOSITION_RESUME,
+		AE_MOVIE_COMPOSITION_END,
+		AE_MOVIE_COMPOSITION_LOOP_END,
+		__AE_MOVIE_COMPOSITION_STATES__
+	} aeMovieCompositionStateFlag;
+
+	typedef void( *ae_movie_composition_state_t )( struct aeMovieComposition * _composition, aeMovieCompositionStateFlag _state, void * _data);
+
 	typedef struct aeMovieCompositionProviders
 	{
 		ae_movie_composition_node_camera_provider_t camera_provider;
-		ae_movie_composition_node_video_provider_t video_provider;
-		ae_movie_composition_node_sound_provider_t sound_provider;
-		ae_movie_composition_node_particle_provider_t particle_provider;
-		ae_movie_composition_node_socket_provider_t socket_provider;
-		ae_movie_composition_node_slot_provider_t slot_provider;
 
+		ae_movie_composition_node_provider_t node_provider;
 		ae_movie_composition_node_destroyer_t node_destroyer;
 
 		ae_movie_node_animate_update_t animate_update;
 		ae_movie_node_animate_begin_t animate_begin;
 		ae_movie_node_animate_end_t animate_end;
+
+		ae_movie_node_event_t event;
+
+		ae_movie_composition_state_t composition_state;
 
 	} aeMovieCompositionProviders;
 
@@ -87,7 +105,12 @@ extern "C" {
 		const aeMovieData * movie_data;
 		const aeMovieCompositionData * composition_data;
 
+		ae_bool_t play;
+		ae_bool_t pause;
 		ae_bool_t loop;
+						
+		uint32_t play_count;
+		uint32_t play_iterator;
 
 		uint32_t update_revision;
 		float timing;
@@ -103,8 +126,20 @@ extern "C" {
 	void destroy_movie_composition( const aeMovieComposition * _composition );
 
 	void set_movie_composition_loop( aeMovieComposition * _composition, ae_bool_t _loop );
+	void set_movie_composition_play_count( aeMovieComposition * _composition, uint32_t _playCount );
+	void play_movie_composition( aeMovieComposition * _composition, float _timing );
+	void stop_movie_composition( aeMovieComposition * _composition );
+	void pause_movie_composition( aeMovieComposition * _composition );
+	void resume_movie_composition( aeMovieComposition * _composition );
+
+	void set_movie_composition_timing( aeMovieComposition * _composition, float _timing );
 
 	void update_movie_composition( aeMovieComposition * _composition, float _timing );
+
+	ae_bool_t set_movie_composition_slot( aeMovieComposition * _composition, const char * _slotName, void * _slotData );
+	void * get_movie_composition_slot( aeMovieComposition * _composition, const char * _slotName );
+	ae_bool_t has_movie_composition_slot( aeMovieComposition * _composition, const char * _slotName );
+	void * remove_movie_composition_slot( aeMovieComposition * _composition, const char * _slotName );
 	
 	typedef struct aeMovieRenderContext
 	{
