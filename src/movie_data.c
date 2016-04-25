@@ -1,5 +1,6 @@
 #	include "movie/movie_data.h"
 
+#	include "movie_transformation.h"
 #	include "movie_memory.h"
 #	include "movie_stream.h"
 
@@ -48,6 +49,15 @@ void delete_movie_data( const aeMovieData * _movieData )
 			{
 				const aeMovieResourceSolid * resource = (const aeMovieResourceSolid *)base_resource;
 				
+				(void)resource;
+
+			}break;
+		case AE_MOVIE_RESOURCE_SHAPE:
+			{
+				const aeMovieResourceShape * resource = (const aeMovieResourceShape *)base_resource;
+
+				DELETEN( instance, resource->meshes );
+
 				(void)resource;
 
 			}break;
@@ -132,139 +142,15 @@ void delete_movie_data( const aeMovieData * _movieData )
 				DELETEN( instance, layer->mesh );
 			}
 
-			if( layer->viewport_matte != AE_NULL )
-			{
-				DELETEN( instance, layer->viewport_matte->viewports );
+			delete_movie_layer_transformation( instance, layer->transformation );
 
-				DELETEN( instance, layer->viewport_matte );
-			}
-
-			DELETEN( instance, layer->property_anchor_point_x );
-			DELETEN( instance, layer->property_anchor_point_y );
-			DELETEN( instance, layer->property_anchor_point_z );
-			DELETEN( instance, layer->property_position_x );
-			DELETEN( instance, layer->property_position_y );
-			DELETEN( instance, layer->property_position_z );
-			DELETEN( instance, layer->property_rotation_x );
-			DELETEN( instance, layer->property_rotation_y );
-			DELETEN( instance, layer->property_rotation_z );
-			DELETEN( instance, layer->property_scale_x );
-			DELETEN( instance, layer->property_scale_y );
-			DELETEN( instance, layer->property_scale_z );
-			DELETEN( instance, layer->property_opacity );
+			DELETE( instance, layer->transformation );
 		}
 
 		DELETEN( instance, composition->layers );
 	}
 
 	DELETE( instance, _movieData );
-}
-//////////////////////////////////////////////////////////////////////////
-static aeMovieResult __load_movie_data_layer_property_zp( const aeMovieStream * _stream, float * _values )
-{
-	uint32_t count = READZ( _stream );
-
-	float * stream_values = _values;
-
-	uint32_t j = 0;
-
-	for( uint32_t i = 0; i != count; ++i )
-	{
-		uint8_t block_type;
-		READ( _stream, block_type );
-
-		uint32_t block_count = READZ( _stream );
-
-		switch( block_type )
-		{
-		case 0:
-			{
-				float block_value;
-				READ( _stream, block_value );
-
-				for( uint32_t block_index = 0; block_index != block_count; ++block_index )
-				{
-					*stream_values++ = block_value;
-					++j;
-				}
-			}break;
-		case 1:
-			{
-				float block_base;
-				READ( _stream, block_base );
-
-				float block_add;
-				READ( _stream, block_add );
-
-				for( uint32_t block_index = 0; block_index != block_count; ++block_index )
-				{
-					float block_value = block_base + block_add * block_index;
-					*stream_values++ = block_value;
-					++j;
-				}
-			}break;
-		case 3:
-			{
-				for( uint32_t block_index = 0; block_index != block_count; ++block_index )
-				{
-					float block_value;
-					READ( _stream, block_value );
-
-					*stream_values++ = block_value;
-					++j;
-				}
-			}break;
-		default:
-			{
-				return AE_MOVIE_FAILED;
-			}break;
-		}
-	}
-	
-	return AE_MOVIE_SUCCESSFUL;
-}
-//////////////////////////////////////////////////////////////////////////
-static aeMovieResult __load_movie_data_layer_property( const aeMovieInstance * _instance, const aeMovieStream * _stream, aeMovieLayerData * _layer, uint32_t _count )
-{
-	uint32_t immutable_property_mask;
-	READ( _stream, immutable_property_mask );
-
-	_layer->immutable_property_mask = immutable_property_mask;
-
-#	define AE_MOVIE_STREAM_PROPERTY(Mask, ImmutableName, Name)\
-	if( immutable_property_mask & Mask )\
-			{\
-		READ( _stream, _layer->ImmutableName );\
-		_layer->Name = AE_NULL;\
-			}\
-				else\
-			{\
-		_layer->ImmutableName = 0.f;\
-		_layer->Name = NEWN( _instance, float, _count );\
-		if( __load_movie_data_layer_property_zp( _stream, _layer->Name ) == AE_MOVIE_FAILED ) return AE_MOVIE_FAILED;\
-			}
-
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_ANCHOR_POINT_X, immuttable_anchor_point_x, property_anchor_point_x );
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_ANCHOR_POINT_Y, immuttable_anchor_point_y, property_anchor_point_y );
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_ANCHOR_POINT_Z, immuttable_anchor_point_z, property_anchor_point_z );
-
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_POSITION_X, immuttable_position_x, property_position_x );
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_POSITION_Y, immuttable_position_y, property_position_y );
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_POSITION_Z, immuttable_position_z, property_position_z );
-
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_SCALE_X, immuttable_scale_x, property_scale_x );
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_SCALE_Y, immuttable_scale_y, property_scale_y );
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_SCALE_Z, immuttable_scale_z, property_scale_z );
-
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_ROTATION_X, immuttable_rotation_x, property_rotation_x );
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_ROTATION_Y, immuttable_rotation_y, property_rotation_y );
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_ROTATION_Z, immuttable_rotation_z, property_rotation_z );
-
-	AE_MOVIE_STREAM_PROPERTY( AE_MOVIE_IMMUTABLE_OPACITY, immuttable_opacity, property_opacity );
-
-#	undef AE_MOVIE_STREAM_PROPERTY
-
-	return AE_MOVIE_SUCCESSFUL;
 }
 //////////////////////////////////////////////////////////////////////////
 static void __load_movie_data_composition_camera( const aeMovieStream * _stream, aeMovieCompositionData * _compostionData )
@@ -278,14 +164,16 @@ static aeMovieResult __load_movie_data_layer( const aeMovieData * _movieData, co
 
 	_layer->index = READZ( _stream );
 	
+	_layer->is_track_matte = READB( _stream );
+	_layer->has_track_matte = READB( _stream );
+
 	READ( _stream, _layer->type );
 
 	_layer->frame_count = READZ( _stream );
 
 	_layer->timeremap = AE_NULL;
 	_layer->mesh = AE_NULL;
-	_layer->viewport_matte = AE_NULL;
-
+	
 	for( ;; )
 	{
 		uint8_t extension;
@@ -339,32 +227,31 @@ static aeMovieResult __load_movie_data_layer( const aeMovieData * _movieData, co
 					}
 				}
 			}break;
-		case 4:
-			{
-				_layer->viewport_matte = NEW( _movieData->instance, aeMovieLayerViewportMatte );
+		//case 4:
+		//	{
+		//		_layer->track_matte = NEW( _movieData->instance, aeMovieLayerTrackMatte );
 
-				_layer->viewport_matte->immutable = READB( _stream );
+		//		_layer->track_matte->track_image = READB( _stream );
 
-				if( _layer->viewport_matte->immutable == AE_TRUE )
-				{
-					READ_VIEWPORT( _stream, &_layer->viewport_matte->immutable_viewport );
+		//		if( _layer->track_matte->track_image == AE_TRUE )
+		//		{
+		//			READ_STRING( _movieData->instance, _stream, _layer->track_matte->image_path );
 
-					_layer->viewport_matte->viewports = AE_NULL;
-				}
-				else
-				{
-					_layer->viewport_matte->viewports = NEWN( _movieData->instance, aeMovieViewport, _layer->frame_count );
+		//			_layer->track_matte->solid_width = 0.f;
+		//			_layer->track_matte->solid_height = 0.f;
+		//		}
+		//		else
+		//		{
+		//			_layer->track_matte->image_path = AE_NULL;
 
-					for( aeMovieViewport
-						*it_viewport = _layer->viewport_matte->viewports,
-						*it_viewport_end = _layer->viewport_matte->viewports + _layer->frame_count;
-					it_viewport != it_viewport_end;
-					++it_viewport )
-					{
-						READ_VIEWPORT( _stream, it_viewport );
-					}
-				}
-			}break;
+		//			READ( _stream, _layer->track_matte->solid_width );
+		//			READ( _stream, _layer->track_matte->solid_height );					
+		//		}
+
+		//		_layer->track_matte->track_count = READZ( _stream );
+
+		//		__load_movie_data_layer_property( _movieData->instance, _stream, &_layer->track_matte->track_transformation, _layer->track_matte->track_count );
+		//	}break;
 		}
 
 		if( extension == 0 )
@@ -422,64 +309,77 @@ static aeMovieResult __load_movie_data_layer( const aeMovieData * _movieData, co
 	_layer->play_count = READZ( _stream );
 
 	READ( _stream, _layer->stretch );
+
+	_layer->transformation = NEW( _movieData->instance, aeMovieLayerTransformation );
 	
-	if( __load_movie_data_layer_property( _movieData->instance, _stream, _layer, _layer->frame_count ) == AE_MOVIE_FAILED )
+	if( load_movie_layer_transformation( _movieData->instance, _stream, _layer->transformation, _layer->frame_count ) == AE_MOVIE_FAILED )
 	{
 		return AE_MOVIE_FAILED;
 	}
 
-	uint8_t layer_type = _layer->type;
-	
-	switch( layer_type )
+	if( _layer->is_track_matte == AE_TRUE )
 	{
-	case AE_MOVIE_LAYER_TYPE_MOVIE:
+		_layer->renderable = AE_FALSE;
+	}
+	else
+	{
+		uint8_t layer_type = _layer->type;
+
+		switch( layer_type )
 		{
-			_layer->renderable = AE_FALSE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_EVENT:
-		{
-			_layer->renderable = AE_FALSE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_SOCKET:
-		{
-			_layer->renderable = AE_FALSE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_SLOT:
-		{
-			_layer->renderable = AE_TRUE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_NULL:
-		{
-			_layer->renderable = AE_FALSE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_SOLID:
-		{
-			_layer->renderable = AE_TRUE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_SEQUENCE:
-		{
-			_layer->renderable = AE_TRUE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_VIDEO:
-		{
-			_layer->renderable = AE_TRUE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_SOUND:
-		{
-			_layer->renderable = AE_FALSE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_PARTICLE:
-		{
-			_layer->renderable = AE_TRUE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_IMAGE:
-		{
-			_layer->renderable = AE_TRUE;
-		}break;
-	case AE_MOVIE_LAYER_TYPE_SUB_MOVIE:
-		{
-			_layer->renderable = AE_TRUE;
-		}break;
+		case AE_MOVIE_LAYER_TYPE_MOVIE:
+			{
+				_layer->renderable = AE_FALSE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_EVENT:
+			{
+				_layer->renderable = AE_FALSE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_SOCKET:
+			{
+				_layer->renderable = AE_FALSE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_SHAPE:
+			{
+				_layer->renderable = AE_TRUE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_SLOT:
+			{
+				_layer->renderable = AE_TRUE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_NULL:
+			{
+				_layer->renderable = AE_FALSE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_SOLID:
+			{
+				_layer->renderable = AE_TRUE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_SEQUENCE:
+			{
+				_layer->renderable = AE_TRUE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_VIDEO:
+			{
+				_layer->renderable = AE_TRUE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_SOUND:
+			{
+				_layer->renderable = AE_FALSE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_PARTICLE:
+			{
+				_layer->renderable = AE_TRUE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_IMAGE:
+			{
+				_layer->renderable = AE_TRUE;
+			}break;
+		case AE_MOVIE_LAYER_TYPE_SUB_MOVIE:
+			{
+				_layer->renderable = AE_TRUE;
+			}break;
+		}
 	}
 
 	return AE_MOVIE_SUCCESSFUL;
@@ -619,11 +519,60 @@ aeMovieResult load_movie_data( aeMovieData * _movieData, const aeMovieStream * _
 			{
 				aeMovieResourceSocket * resource = NEW( _movieData->instance, aeMovieResourceSocket );
 
-				uint32_t polygon_count = READZ( _stream );
+				ae_bool_t polygon_immutable = READB( _stream );
 
-				READ_POLYGON( _movieData->instance, _stream, &resource->polygon );
+				if( polygon_immutable == AE_TRUE )
+				{
+					READ_POLYGON( _movieData->instance, _stream, &resource->immutable_polygon );
+				}
+				else
+				{
+					uint32_t polygon_count = READZ( _stream );
 
-				resource->data = AE_NULL;
+					resource->polygons = NEWN( _movieData->instance, aeMoviePolygon, polygon_count );
+					
+					for( aeMoviePolygon
+						*it_polygon = resource->polygons,
+						*it_polygon_end = resource->polygons + polygon_count;
+					it_polygon != it_polygon_end;
+					++it_polygon )
+					{
+						READ_POLYGON( _movieData->instance, _stream, it_polygon );
+					}
+				}
+
+				*it_resource = (aeMovieResource *)resource;
+			}break;
+		case AE_MOVIE_RESOURCE_SHAPE:
+			{
+				aeMovieResourceShape * resource = NEW( _movieData->instance, aeMovieResourceShape );
+
+				READ( _stream, resource->r );
+				READ( _stream, resource->g );
+				READ( _stream, resource->b );
+				READ( _stream, resource->a );
+
+				resource->immutable = READB( _stream );
+
+				if( resource->immutable == AE_TRUE )
+				{
+					READ_MESH( _movieData->instance, _stream, &resource->immutable_mesh );
+				}
+				else
+				{
+					uint32_t mesh_count = READZ( _stream );
+
+					resource->meshes = NEWN( _movieData->instance, aeMovieMesh, mesh_count );
+
+					for( aeMovieMesh
+						*it_mesh = resource->meshes,
+						*it_mesh_end = resource->meshes + mesh_count;
+					it_mesh != it_mesh_end;
+					++it_mesh )
+					{
+						READ_MESH( _movieData->instance, _stream, it_mesh );
+					}
+				}
 
 				*it_resource = (aeMovieResource *)resource;
 			}break;
@@ -636,8 +585,6 @@ aeMovieResult load_movie_data( aeMovieData * _movieData, const aeMovieStream * _
 				READ( _stream, resource->r );
 				READ( _stream, resource->g );
 				READ( _stream, resource->b );
-
-				resource->data = AE_NULL;
 
 				*it_resource = (aeMovieResource *)resource;
 			}break;
