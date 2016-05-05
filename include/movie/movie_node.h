@@ -18,12 +18,13 @@
 extern "C" {
 #endif
 
-	typedef enum aeMovieNodeAnimationStateEnum
+	typedef enum
 	{
 		AE_MOVIE_NODE_ANIMATE_STATIC,
 		AE_MOVIE_NODE_ANIMATE_BEGIN,
 		AE_MOVIE_NODE_ANIMATE_PROCESS,
-		AE_MOVIE_NODE_ANIMATE_END
+		AE_MOVIE_NODE_ANIMATE_END,
+		__AE_MOVIE_NODE_ANIMATE_STATES__
 	} aeMovieNodeAnimationStateEnum;
 
 	typedef struct aeMovieNodeCamera
@@ -39,6 +40,7 @@ extern "C" {
 		struct aeMovieNode * track_matte;
 		struct aeMovieNode * prev_track_matte;
 
+		float start_time;
 		float in_time;
 		float out_time;
 
@@ -84,8 +86,8 @@ extern "C" {
 		AE_MOVIE_COMPOSITION_LOOP_END,
 		__AE_MOVIE_COMPOSITION_STATES__
 	} aeMovieCompositionStateFlag;
-
-	typedef void( *ae_movie_composition_state_t )( struct aeMovieComposition * _composition, aeMovieCompositionStateFlag _state, void * _data);
+	
+	typedef void( *ae_movie_composition_state_t )( aeMovieCompositionStateFlag _state, void * _data);
 
 	typedef struct aeMovieCompositionProviders
 	{
@@ -113,8 +115,8 @@ extern "C" {
 		ae_bool_t pause;
 		ae_bool_t interrupt;
 
-		ae_bool_t loop;		
-						
+		ae_bool_t loop;
+
 		uint32_t update_revision;
 		float time;
 		
