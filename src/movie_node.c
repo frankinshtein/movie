@@ -740,7 +740,10 @@ static void __update_movie_composition_node_state( aeMovieComposition * _composi
 		{
 			_node->animate = AE_MOVIE_NODE_ANIMATE_PROCESS;
 
-			(*_composition->providers.node_update)(_node->element_data, _node->layer->type, AE_MOVIE_NODE_UPDATE_UPDATE, 0.f, _node->matrix, _node->opacity, _composition->provider_data);
+			if( _node->element_data != AE_NULL )
+			{
+				(*_composition->providers.node_update)(_node->element_data, _node->layer->type, AE_MOVIE_NODE_UPDATE_UPDATE, 0.f, _node->matrix, _node->opacity, _composition->provider_data);
+			}
 		}
 	}
 	else
@@ -838,6 +841,10 @@ static void __compute_movie_node( const aeMovieInstance * _instance, const aeMov
 	if( _node->layer->has_track_matte == AE_TRUE )
 	{
 		_vertices->track_matte_data = _node->track_matte_data;
+	}
+	else
+	{
+		_vertices->track_matte_data = AE_NULL;
 	}
 
 	float frameDuration = layer->composition->frameDuration;
@@ -1013,7 +1020,12 @@ static void __update_movie_composition_track_matte_state( aeMovieComposition * _
 		{
 			_node->animate = AE_MOVIE_NODE_ANIMATE_PROCESS;
 
-			(*_composition->providers.track_matte_update)(_node->element_data, _node->layer->type, AE_MOVIE_NODE_UPDATE_UPDATE, 0.f, &vertices, _composition->provider_data);
+			if( _node->element_data != AE_NULL )
+			{
+				void * track_matte_data = (*_composition->providers.track_matte_update)(_node->element_data, _node->layer->type, AE_MOVIE_NODE_UPDATE_UPDATE, 0.f, &vertices, _composition->provider_data);
+
+				_node->track_matte_data = track_matte_data;
+			}
 		}
 	}
 	else
@@ -1024,7 +1036,9 @@ static void __update_movie_composition_track_matte_state( aeMovieComposition * _
 
 			if( _node->element_data != AE_NULL )
 			{
-				(*_composition->providers.track_matte_update)(_node->element_data, _node->layer->type, AE_MOVIE_NODE_UPDATE_END, 0.f, &vertices, _composition->provider_data);
+				void * track_matte_data = (*_composition->providers.track_matte_update)(_node->element_data, _node->layer->type, AE_MOVIE_NODE_UPDATE_END, 0.f, &vertices, _composition->provider_data);
+
+				_node->track_matte_data = track_matte_data;
 			}
 		}
 		else
@@ -1410,6 +1424,11 @@ static uint32_t __count_movie_redner_context( const aeMovieComposition * _compos
 		const aeMovieLayerData * layer = node->layer;
 
 		if( layer->renderable == AE_FALSE )
+		{
+			continue;
+		}
+
+		if( layer->is_track_matte == AE_TRUE )
 		{
 			continue;
 		}
