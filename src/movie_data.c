@@ -4,12 +4,11 @@
 #	include "movie_memory.h"
 #	include "movie_stream.h"
 
-#	include "movie_utils.h"
-
 #	ifndef AE_MOVIE_MAX_COMPOSITION_NAME
 #	define AE_MOVIE_MAX_COMPOSITION_NAME 128
 #	endif
-
+//////////////////////////////////////////////////////////////////////////
+static const uint32_t ae_movie_version = 3;
 //////////////////////////////////////////////////////////////////////////
 aeMovieData * ae_create_movie_data( const aeMovieInstance * _instance )
 {
@@ -467,8 +466,6 @@ static aeMovieResult __load_movie_data_composition( const aeMovieData * _movieDa
 	return AE_MOVIE_SUCCESSFUL;
 }
 //////////////////////////////////////////////////////////////////////////
-static const uint32_t ae_movie_version = 2;
-//////////////////////////////////////////////////////////////////////////
 aeMovieResult ae_load_movie_data( aeMovieData * _movieData, const aeMovieStream * _stream, ae_movie_data_resource_provider_t _provider, void * _data )
 {
 	char magic[4];
@@ -707,6 +704,8 @@ aeMovieResult ae_load_movie_data( aeMovieData * _movieData, const aeMovieStream 
 //////////////////////////////////////////////////////////////////////////
 const aeMovieCompositionData * ae_get_movie_composition_data( const aeMovieData * _movieData, const char * _name )
 {
+	const aeMovieInstance * instance = _movieData->instance;
+
 	for( const aeMovieCompositionData
 		*it_composition = _movieData->compositions,
 		*it_composition_end = _movieData->compositions + _movieData->composition_count;
@@ -715,7 +714,7 @@ const aeMovieCompositionData * ae_get_movie_composition_data( const aeMovieData 
 	{
 		const aeMovieCompositionData * composition = it_composition;
 
-		if( ae_strncmp( composition->name, _name, AE_MOVIE_MAX_COMPOSITION_NAME ) != 0 )
+		if( STRNCMP( instance, composition->name, _name, AE_MOVIE_MAX_COMPOSITION_NAME ) != 0 )
 		{
 			continue;
 		}
