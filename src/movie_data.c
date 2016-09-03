@@ -8,7 +8,7 @@
 #	define AE_MOVIE_MAX_COMPOSITION_NAME 128
 #	endif
 //////////////////////////////////////////////////////////////////////////
-static const uint32_t ae_movie_version = 4;
+static const uint32_t ae_movie_version = 5;
 //////////////////////////////////////////////////////////////////////////
 aeMovieData * ae_create_movie_data( const aeMovieInstance * _instance )
 {
@@ -318,7 +318,7 @@ static aeMovieResult __load_movie_data_layer( const aeMovieData * _movieData, co
 		_layer->out_time = _compositionData->duration;
 	}
 
-	READ( _stream, _layer->blend_mode );
+	READ( _stream, _layer->blend_mode ); 
 	_layer->threeD = READB( _stream );
 	READ( _stream, _layer->params );
 
@@ -656,6 +656,8 @@ aeMovieResult ae_load_movie_data( aeMovieData * _movieData, const aeMovieStream 
 			aeMovieResourceImage * resource = NEW( _movieData->instance, aeMovieResourceImage );
 
 			READ_STRING( _movieData->instance, _stream, resource->path );
+
+			READ( _stream, resource->premultiplied );
 
 			READ( _stream, resource->base_width );
 			READ( _stream, resource->base_height );
