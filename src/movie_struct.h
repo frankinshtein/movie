@@ -17,10 +17,10 @@ typedef struct aeMovieInstance
 	void * instance_data;
 	
 
-	float sprite_uv[8];	
+    ae_vector2_t sprite_uv[4];
 	uint16_t sprite_indices[6];	
 
-	float bezier_warp_uv[AE_MOVIE_BEZIER_WARP_GRID_VERTEX_COUNT * 2];
+    ae_vector2_t bezier_warp_uv[AE_MOVIE_BEZIER_WARP_GRID_VERTEX_COUNT];
 	uint16_t bezier_warp_indices[AE_MOVIE_BEZIER_WARP_GRID_INDICES_COUNT];
 } aeMovieInstance;
 //////////////////////////////////////////////////////////////////////////
@@ -48,6 +48,13 @@ typedef struct aeMovieNode
 
 	float composition_opactity;
 	float opacity;
+
+    float composition_r;
+    float composition_g;
+    float composition_b;
+    float r;    
+    float g;
+    float b;
 
 	aeMovieBlendMode blend_mode;
 
