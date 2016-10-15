@@ -26,7 +26,7 @@ extern "C" {
 	typedef struct
 	{
 		uint32_t point_count;
-		float * points;
+		const ae_vector2_t * points;
 
 	} aeMoviePolygon;
 
@@ -43,8 +43,8 @@ extern "C" {
 	{
 		uint32_t vertex_count;
 		uint32_t indices_count;
-		ae_vector2_t * positions;
-		ae_vector2_t * uvs;
+		const ae_vector2_t * positions;
+		const ae_vector2_t * uvs;
 		uint16_t * indices;
 
 	} aeMovieMesh;
@@ -117,7 +117,9 @@ extern "C" {
 	typedef enum
 	{
 		AE_MOVIE_SUCCESSFUL = 0,
-		AE_MOVIE_FAILED = -1
+		AE_MOVIE_FAILED = -1,
+        AE_MOVIE_INVALID_MAGIC = -2,
+        AE_MOVIE_INVALID_VERSION = -3,
 	} aeMovieResult;
 
 	typedef void( *ae_movie_stream_read_t )(void * _data, void * _buff, uint32_t _size);

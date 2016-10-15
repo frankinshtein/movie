@@ -75,8 +75,10 @@ static void ae_magic_read_polygon( const aeMovieInstance * _instance, const aeMo
 		return;
 	}
 
-	_polygon->points = NEWN( _instance, float, point_count * 2 );
-	READN( _stream, _polygon->points, point_count * 2 );
+    ae_vector2_t * points = NEWN( _instance, ae_vector2_t, point_count );
+	READN( _stream, points, point_count );
+
+    _polygon->points = points;
 }
 //////////////////////////////////////////////////////////////////////////
 static void ae_magic_read_viewport( const aeMovieStream * _stream, aeMovieViewport * _viewport )
@@ -108,13 +110,16 @@ static void ae_magic_read_mesh( const aeMovieInstance * _instance, const aeMovie
 	_mesh->vertex_count = vertex_count;
 	_mesh->indices_count = indices_count;
 
-	_mesh->positions = NEWN( _instance, ae_vector2_t, vertex_count );
-	READN( _stream, _mesh->positions, vertex_count );
+    ae_vector2_t * positions = NEWN( _instance, ae_vector2_t, vertex_count );
+	READN( _stream, positions, vertex_count );
+    _mesh->positions = positions;
 
-	_mesh->uvs = NEWN( _instance, ae_vector2_t, vertex_count );
-	READN( _stream, _mesh->uvs, vertex_count );
-
-	_mesh->indices = NEWN( _instance, uint16_t, indices_count );
-	READN( _stream, _mesh->indices, indices_count );
+    ae_vector2_t * uvs = NEWN(_instance, ae_vector2_t, vertex_count);
+    READN(_stream, uvs, vertex_count);
+    _mesh->uvs = uvs;
+	
+    uint16_t * indices = NEWN( _instance, uint16_t, indices_count );
+	READN( _stream, indices, indices_count );
+    _mesh->indices = indices;
 }
 #	endif

@@ -26,11 +26,9 @@ typedef enum
 //////////////////////////////////////////////////////////////////////////
 static aeMovieNode * __find_node_by_layer( aeMovieNode * _nodes, uint32_t _begin, uint32_t _end, const aeMovieLayerData * _layer )
 {
-	for( aeMovieNode
-		*it_node = _nodes + _begin,
-		*it_node_end = _nodes + _end;
-	it_node != it_node_end;
-	++it_node )
+	aeMovieNode * it_node = _nodes + _begin;
+	aeMovieNode * it_node_end = _nodes + _end;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		aeMovieNode * node = it_node;
 
@@ -47,11 +45,9 @@ static aeMovieNode * __find_node_by_layer( aeMovieNode * _nodes, uint32_t _begin
 //////////////////////////////////////////////////////////////////////////
 static const aeMovieLayerData * __find_layer_by_index( const aeMovieCompositionData * _compositionData, uint32_t _index )
 {
-	for( const aeMovieLayerData
-		*it_layer = _compositionData->layers,
-		*it_layer_end = _compositionData->layers + _compositionData->layer_count;
-	it_layer != it_layer_end;
-	++it_layer )
+	const aeMovieLayerData * it_layer = _compositionData->layers;
+	const aeMovieLayerData * it_layer_end = _compositionData->layers + _compositionData->layer_count;
+	for( ; it_layer != it_layer_end; ++it_layer )
 	{
 		const aeMovieLayerData * layer = it_layer;
 
@@ -66,11 +62,20 @@ static const aeMovieLayerData * __find_layer_by_index( const aeMovieCompositionD
 	return AE_NULL;
 }
 //////////////////////////////////////////////////////////////////////////
-static float __compute_movie_color_r(const aeMovieLayerColorVertex * _colorVertex, uint32_t _frame, float t)
+static float __compute_movie_color_r(const aeMovieLayerColorVertex * _colorVertex, uint32_t _frame, ae_bool_t _interpolate, float t)
 {
     if( _colorVertex->immutable_r == AE_TRUE )
     {
         return _colorVertex->immutable_color_vertex_r;
+    }
+
+    if( _interpolate == AE_FALSE )
+    {
+        ae_color_t c = _colorVertex->color_vertites_r[_frame];
+
+        float cf = tof_c(c);
+
+        return cf;
     }
 
     ae_color_t c0 = _colorVertex->color_vertites_r[_frame + 0];
@@ -81,11 +86,20 @@ static float __compute_movie_color_r(const aeMovieLayerColorVertex * _colorVerte
     return cf;
 }
 //////////////////////////////////////////////////////////////////////////
-static float __compute_movie_color_g(const aeMovieLayerColorVertex * _colorVertex, uint32_t _frame, float t)
+static float __compute_movie_color_g(const aeMovieLayerColorVertex * _colorVertex, uint32_t _frame, ae_bool_t _interpolate, float t)
 {
     if( _colorVertex->immutable_g == AE_TRUE )
     {
         return _colorVertex->immutable_color_vertex_g;
+    }
+
+    if( _interpolate == AE_FALSE )
+    {
+        ae_color_t c = _colorVertex->color_vertites_g[_frame];
+
+        float cf = tof_c(c);
+
+        return cf;
     }
 
     ae_color_t c0 = _colorVertex->color_vertites_g[_frame + 0];
@@ -96,11 +110,20 @@ static float __compute_movie_color_g(const aeMovieLayerColorVertex * _colorVerte
     return cf;
 }
 //////////////////////////////////////////////////////////////////////////
-static float __compute_movie_color_b(const aeMovieLayerColorVertex * _colorVertex, uint32_t _frame, float t)
+static float __compute_movie_color_b(const aeMovieLayerColorVertex * _colorVertex, uint32_t _frame, ae_bool_t _interpolate, float t)
 {
     if( _colorVertex->immutable_b == AE_TRUE )
     {
         return _colorVertex->immutable_color_vertex_b;
+    }
+
+    if( _interpolate == AE_FALSE )
+    {
+        ae_color_t c = _colorVertex->color_vertites_b[_frame];
+
+        float cf = tof_c(c);
+
+        return cf;
     }
 
     ae_color_t c0 = _colorVertex->color_vertites_b[_frame + 0];
@@ -126,9 +149,9 @@ static void __update_movie_composition_node_matrix( aeMovieComposition * _compos
 
     if( _node->layer->color_vertex != AE_NULL )
     {
-        local_r = __compute_movie_color_r(_node->layer->color_vertex, _frame, _t);
-        local_g = __compute_movie_color_g(_node->layer->color_vertex, _frame, _t);
-        local_b = __compute_movie_color_b(_node->layer->color_vertex, _frame, _t);
+        local_r = __compute_movie_color_r(_node->layer->color_vertex, _frame, _interpolate, _t);
+        local_g = __compute_movie_color_g(_node->layer->color_vertex, _frame, _interpolate, _t);
+        local_b = __compute_movie_color_b(_node->layer->color_vertex, _frame, _interpolate, _t);
     }
 
 	if( _node->relative == AE_NULL )
@@ -212,12 +235,10 @@ static void __update_movie_composition_node_matrix( aeMovieComposition * _compos
 static uint32_t __get_movie_composition_data_node_count( const aeMovieCompositionData * _compositionData )
 {
 	uint32_t count = _compositionData->layer_count;
-
-	for( const aeMovieLayerData
-		*it_layer = _compositionData->layers,
-		*it_layer_end = _compositionData->layers + _compositionData->layer_count;
-	it_layer != it_layer_end;
-	++it_layer )
+		
+	const aeMovieLayerData * it_layer = _compositionData->layers;
+	const aeMovieLayerData * it_layer_end = _compositionData->layers + _compositionData->layer_count;
+	for( ; it_layer != it_layer_end; ++it_layer )
 	{
 		const aeMovieLayerData * layer = it_layer;
 
@@ -243,11 +264,9 @@ static uint32_t __get_movie_composition_data_node_count( const aeMovieCompositio
 //////////////////////////////////////////////////////////////////////////
 static ae_bool_t __setup_movie_node_track_matte( aeMovieNode * _nodes, uint32_t * _iterator, const aeMovieCompositionData * _compositionData, aeMovieNode * _trackMatte )
 {
-	for( const aeMovieLayerData
-		*it_layer = _compositionData->layers,
-		*it_layer_end = _compositionData->layers + _compositionData->layer_count;
-	it_layer != it_layer_end;
-	++it_layer )
+	const aeMovieLayerData * it_layer = _compositionData->layers;
+	const aeMovieLayerData * it_layer_end = _compositionData->layers + _compositionData->layer_count;
+	for( ; it_layer != it_layer_end; ++it_layer )
 	{
 		const aeMovieLayerData * layer = it_layer;
 
@@ -319,11 +338,9 @@ static void __setup_movie_node_relative( aeMovieNode * _nodes, uint32_t * _itera
 {
 	uint32_t begin_index = *_iterator;
 
-	for( const aeMovieLayerData
-		*it_layer = _compositionData->layers,
-		*it_layer_end = _compositionData->layers + _compositionData->layer_count;
-	it_layer != it_layer_end;
-	++it_layer )
+	const aeMovieLayerData *it_layer = _compositionData->layers;
+	const aeMovieLayerData *it_layer_end = _compositionData->layers + _compositionData->layer_count;
+	for( ; it_layer != it_layer_end; ++it_layer )
 	{
 		const aeMovieLayerData * layer = it_layer;
 
@@ -357,14 +374,12 @@ static void __setup_movie_node_relative( aeMovieNode * _nodes, uint32_t * _itera
 	}
 
 	uint32_t end_index = *_iterator;
-
-	for( const aeMovieLayerData
-		*it_layer = _compositionData->layers,
-		*it_layer_end = _compositionData->layers + _compositionData->layer_count;
-	it_layer != it_layer_end;
-	++it_layer )
+    	
+	const aeMovieLayerData *it_layer2 = _compositionData->layers;
+	const aeMovieLayerData *it_layer2_end = _compositionData->layers + _compositionData->layer_count;
+	for( ; it_layer2 != it_layer2_end; ++it_layer2 )
 	{
-		const aeMovieLayerData * layer = it_layer;
+		const aeMovieLayerData * layer = it_layer2;
 
 		uint32_t parent_index = layer->parent_index;
 
@@ -385,11 +400,10 @@ static void __setup_movie_node_relative( aeMovieNode * _nodes, uint32_t * _itera
 //////////////////////////////////////////////////////////////////////////
 static void __setup_movie_node_time( aeMovieNode * _nodes, uint32_t * _iterator, const aeMovieCompositionData * _compositionData, aeMovieNode * _parent, float _stretch, float _startTime )
 {
-	for( const aeMovieLayerData
-		*it_layer = _compositionData->layers,
-		*it_layer_end = _compositionData->layers + _compositionData->layer_count;
-	it_layer != it_layer_end;
-	++it_layer )
+	
+	const aeMovieLayerData *it_layer = _compositionData->layers;
+	const aeMovieLayerData *it_layer_end = _compositionData->layers + _compositionData->layer_count;
+	for( ; it_layer != it_layer_end; ++it_layer )
 	{
 		const aeMovieLayerData * layer = it_layer;
 
@@ -453,12 +467,10 @@ static void __setup_movie_node_time( aeMovieNode * _nodes, uint32_t * _iterator,
 }
 //////////////////////////////////////////////////////////////////////////
 static void __setup_movie_node_blend_mode( aeMovieNode * _nodes, uint32_t * _iterator, const aeMovieCompositionData * _compositionData, aeMovieNode * _parent, aeMovieBlendMode _blendMode )
-{
-	for( const aeMovieLayerData
-		*it_layer = _compositionData->layers,
-		*it_layer_end = _compositionData->layers + _compositionData->layer_count;
-	it_layer != it_layer_end;
-	++it_layer )
+{	
+	const aeMovieLayerData *it_layer = _compositionData->layers;
+	const aeMovieLayerData *it_layer_end = _compositionData->layers + _compositionData->layer_count;
+	for( ; it_layer != it_layer_end; ++it_layer )
 	{
 		const aeMovieLayerData * layer = it_layer;
 
@@ -495,12 +507,10 @@ static void __setup_movie_node_blend_mode( aeMovieNode * _nodes, uint32_t * _ite
 }
 //////////////////////////////////////////////////////////////////////////
 static void __setup_movie_node_camera( aeMovieComposition * _composition, uint32_t * _iterator, const aeMovieCompositionData * _compositionData, aeMovieNode * _parent, const void * _cameraData )
-{
-	for( const aeMovieLayerData
-		*it_layer = _compositionData->layers,
-		*it_layer_end = _compositionData->layers + _compositionData->layer_count;
-	it_layer != it_layer_end;
-	++it_layer )
+{	
+	const aeMovieLayerData *it_layer = _compositionData->layers;
+	const aeMovieLayerData *it_layer_end = _compositionData->layers + _compositionData->layer_count;
+	for( ; it_layer != it_layer_end; ++it_layer )
 	{
 		const aeMovieLayerData * layer = it_layer;
 
@@ -549,12 +559,10 @@ static void __setup_movie_node_matrix( aeMovieComposition * _composition )
 {
 	_composition->update_revision++;
 	uint32_t update_revision = _composition->update_revision;
-
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+	
+	aeMovieNode *it_node = _composition->nodes;
+	aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		aeMovieNode * node = it_node;
 
@@ -565,12 +573,10 @@ static void __setup_movie_node_matrix( aeMovieComposition * _composition )
 static void __setup_movie_composition_element( aeMovieComposition * _composition )
 {
 	const aeMovieCompositionData * compositionData = _composition->composition_data;
-
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+	
+	aeMovieNode* it_node = _composition->nodes;
+	aeMovieNode* it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		aeMovieNode * node = it_node;
 
@@ -586,11 +592,10 @@ static void __setup_movie_composition_active( aeMovieComposition * _composition 
 {
 	const aeMovieCompositionData * compositionData = _composition->composition_data;
 
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+	
+	aeMovieNode *it_node = _composition->nodes;
+	aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		aeMovieNode * node = it_node;
 
@@ -741,14 +746,17 @@ aeMovieComposition * ae_create_movie_composition( const aeMovieData * _movieData
 }
 //////////////////////////////////////////////////////////////////////////
 void ae_destroy_movie_composition( const aeMovieComposition * _composition )
-{
-	for( const aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+{	
+	const aeMovieNode *it_node = _composition->nodes;
+	const aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		const aeMovieNode * node = it_node;
+
+		if( node->animate != AE_MOVIE_NODE_ANIMATE_STATIC && node->animate != AE_MOVIE_NODE_ANIMATE_END )
+		{
+			(*_composition->providers.track_matte_update)(node->element_data, node->layer->type, AE_FALSE, AE_MOVIE_NODE_UPDATE_END, 0.f, AE_NULL, node->track_matte_data, _composition->provider_data);			
+		}
 
 		(*_composition->providers.node_destroyer)(node->element_data, node->layer->type, _composition->provider_data);
 	}
@@ -780,7 +788,8 @@ uint32_t ae_get_movie_composition_max_render_node( const aeMovieComposition * _c
 
 	uint32_t node_count = _composition->node_count;
 
-	for( uint32_t iterator = 0; iterator != node_count; ++iterator )
+	uint32_t iterator = 0;
+	for( ; iterator != node_count; ++iterator )
 	{
 		const aeMovieNode * node = _composition->nodes + iterator;
 
@@ -857,6 +866,21 @@ void ae_stop_movie_composition( aeMovieComposition * _composition )
 	if( _composition->play == AE_FALSE )
 	{
 		return;
+	}
+
+	aeMovieNode *it_node = _composition->nodes;
+	aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
+	{
+		aeMovieNode * node = it_node;
+
+		if( node->animate != AE_MOVIE_NODE_ANIMATE_STATIC && node->animate != AE_MOVIE_NODE_ANIMATE_END )
+		{
+			(*_composition->providers.track_matte_update)(node->element_data, node->layer->type, AE_FALSE, AE_MOVIE_NODE_UPDATE_END, 0.f, AE_NULL, node->track_matte_data, _composition->provider_data);
+
+			node->animate = AE_MOVIE_NODE_ANIMATE_STATIC;
+			node->track_matte_data = AE_NULL;
+		}
 	}
 
 	_composition->play = AE_FALSE;
@@ -962,23 +986,24 @@ static void __update_movie_composition_node_state( aeMovieComposition * _composi
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-static void __make_mesh_vertices( const aeMovieMesh * _mesh, const ae_matrix4_t _matrix, aeMovieRenderMesh * _renderMesh )
+static void __make_mesh_vertices( const aeMovieMesh * _mesh, const ae_matrix4_t _matrix, aeMovieRenderMesh * _render )
 {
-	_renderMesh->vertexCount = _mesh->vertex_count;
-	_renderMesh->indexCount = _mesh->indices_count;
+	_render->vertexCount = _mesh->vertex_count;
+	_render->indexCount = _mesh->indices_count;
 
 	uint32_t vertex_count = _mesh->vertex_count;
 
-	for( uint32_t i = 0; i != vertex_count; ++i )
+	uint32_t i = 0;
+	for( ; i != vertex_count; ++i )
 	{
-		mul_v3_v2_m4( _renderMesh->position[i], _mesh->positions[i], _matrix );
+		mul_v3_v2_m4( _render->position[i], _mesh->positions[i], _matrix );
 	}
 
-	_renderMesh->uv = _mesh->uvs;
-	_renderMesh->indices = _mesh->indices;
+	_render->uv = _mesh->uvs;
+	_render->indices = _mesh->indices;
 }
 //////////////////////////////////////////////////////////////////////////
-static void __make_layer_sprite_vertices( const aeMovieInstance * _instance, float _offset_x, float _offset_y, float _width, float _height, const ae_matrix4_t _matrix, aeMovieRenderMesh * _renderMesh )
+static void __make_layer_sprite_vertices( const aeMovieInstance * _instance, float _offset_x, float _offset_y, float _width, float _height, const ae_matrix4_t _matrix, aeMovieRenderMesh * _render )
 {
     ae_vector2_t v_position[4];
 
@@ -993,23 +1018,23 @@ static void __make_layer_sprite_vertices( const aeMovieInstance * _instance, flo
 	*v++ = _offset_x + _width * 0.f;
 	*v++ = _offset_y + _height * 1.f;
 
-	_renderMesh->vertexCount = 4;
-	_renderMesh->indexCount = 6;
+	_render->vertexCount = 4;
+	_render->indexCount = 6;
 
-	mul_v3_v2_m4( _renderMesh->position[0], v_position[0], _matrix );
-	mul_v3_v2_m4( _renderMesh->position[1], v_position[1], _matrix );
-	mul_v3_v2_m4( _renderMesh->position[2], v_position[2], _matrix );
-	mul_v3_v2_m4( _renderMesh->position[3], v_position[3], _matrix );
+	mul_v3_v2_m4( _render->position[0], v_position[0], _matrix );
+	mul_v3_v2_m4( _render->position[1], v_position[1], _matrix );
+	mul_v3_v2_m4( _render->position[2], v_position[2], _matrix );
+	mul_v3_v2_m4( _render->position[3], v_position[3], _matrix );
 
-	_renderMesh->uv = _instance->sprite_uv;
-	_renderMesh->indices = _instance->sprite_indices;
+	_render->uv = _instance->sprite_uv;
+	_render->indices = _instance->sprite_indices;
 }
 //////////////////////////////////////////////////////////////////////////
-static void __make_layer_mesh_vertices( const aeMovieLayerMesh * _layerMesh, uint32_t _frame, const ae_matrix4_t _matrix, aeMovieRenderMesh * _renderMesh )
+static void __make_layer_mesh_vertices( const aeMovieLayerMesh * _layerMesh, uint32_t _frame, const ae_matrix4_t _matrix, aeMovieRenderMesh * _render )
 {
 	const aeMovieMesh * mesh = (_layerMesh->immutable == AE_TRUE) ? &_layerMesh->immutable_mesh : (_layerMesh->meshes + _frame);
 
-	__make_mesh_vertices( mesh, _matrix, _renderMesh );
+	__make_mesh_vertices( mesh, _matrix, _render );
 }
 //////////////////////////////////////////////////////////////////////////
 static float __bezier_point( float a, float b, float c, float d, float t )
@@ -1056,19 +1081,21 @@ static float __bezier_warp_y( const aeMovieBezierWarp * _bezier_warp, float _u, 
 	return y;
 }
 //////////////////////////////////////////////////////////////////////////
-static void __make_bezier_warp_vertices( const aeMovieInstance * _instance, const aeMovieBezierWarp * _bezierWarp, const ae_matrix4_t _matrix, aeMovieRenderMesh * _renderMesh )
+static void __make_bezier_warp_vertices( const aeMovieInstance * _instance, const aeMovieBezierWarp * _bezierWarp, const ae_matrix4_t _matrix, aeMovieRenderMesh * _render )
 {
-	_renderMesh->vertexCount = AE_MOVIE_BEZIER_WARP_GRID_VERTEX_COUNT;
-	_renderMesh->indexCount = AE_MOVIE_BEZIER_WARP_GRID_INDICES_COUNT;
+	_render->vertexCount = AE_MOVIE_BEZIER_WARP_GRID_VERTEX_COUNT;
+	_render->indexCount = AE_MOVIE_BEZIER_WARP_GRID_INDICES_COUNT;
 
 	float du = 0.f;
 	float dv = 0.f;
 
-	ae_vector3_t * positions = (ae_vector3_t *)_renderMesh->position;
+	ae_vector3_t * positions = _render->position;
 
-	for( uint32_t v = 0; v != AE_MOVIE_BEZIER_WARP_GRID; ++v )
+	uint32_t v = 0;
+	for( ; v != AE_MOVIE_BEZIER_WARP_GRID; ++v )
 	{
-		for( uint32_t u = 0; u != AE_MOVIE_BEZIER_WARP_GRID; ++u )
+		uint32_t u = 0;
+		for( ; u != AE_MOVIE_BEZIER_WARP_GRID; ++u )
 		{
 			float x = __bezier_warp_x( _bezierWarp, du, dv );
 			float y = __bezier_warp_y( _bezierWarp, du, dv );
@@ -1084,15 +1111,15 @@ static void __make_bezier_warp_vertices( const aeMovieInstance * _instance, cons
 		dv += ae_movie_bezier_warp_grid_invf;
 	}
 
-	_renderMesh->uv = _instance->bezier_warp_uv;
-	_renderMesh->indices = _instance->bezier_warp_indices;
+	_render->uv = _instance->bezier_warp_uv;
+	_render->indices = _instance->bezier_warp_indices;
 }
 //////////////////////////////////////////////////////////////////////////
-static void __make_layer_bezier_warp_vertices( const aeMovieInstance * _instance, const aeMovieLayerBezierWarp * _bezierWarp, uint32_t _frame, float _t, const ae_matrix4_t _matrix, aeMovieRenderMesh * _renderMesh )
+static void __make_layer_bezier_warp_vertices( const aeMovieInstance * _instance, const aeMovieLayerBezierWarp * _bezierWarp, uint32_t _frame, float _t, const ae_matrix4_t _matrix, aeMovieRenderMesh * _render )
 {
 	if( _bezierWarp->immutable == AE_TRUE )
 	{
-		__make_bezier_warp_vertices( _instance, &_bezierWarp->immutable_bezier_warp, _matrix, _renderMesh );
+		__make_bezier_warp_vertices( _instance, &_bezierWarp->immutable_bezier_warp, _matrix, _render );
 	}
 	else
 	{
@@ -1101,21 +1128,65 @@ static void __make_layer_bezier_warp_vertices( const aeMovieInstance * _instance
 		const aeMovieBezierWarp * bezier_warp_frame_current = _bezierWarp->bezier_warps + _frame + 0;
 		const aeMovieBezierWarp * bezier_warp_frame_next = _bezierWarp->bezier_warps + _frame + 1;
 
-		for( uint32_t i = 0; i != 4; ++i )
-		{
-			linerp_f2( bezierWarp.corners[i], bezier_warp_frame_current->corners[i], bezier_warp_frame_next->corners[i], _t );
-		}
+        const ae_vector2_t * current_corners = bezier_warp_frame_current->corners;
+        const ae_vector2_t * next_corners = bezier_warp_frame_next->corners;
 
-		for( uint32_t i = 0; i != 8; ++i )
-		{
-			linerp_f2( bezierWarp.beziers[i], bezier_warp_frame_current->beziers[i], bezier_warp_frame_next->beziers[i], _t );
-		}
+		linerp_f2( bezierWarp.corners[0], current_corners[0], next_corners[0], _t );
+		linerp_f2( bezierWarp.corners[1], current_corners[1], next_corners[1], _t );
+		linerp_f2( bezierWarp.corners[2], current_corners[2], next_corners[2], _t );
+		linerp_f2( bezierWarp.corners[3], current_corners[3], next_corners[3], _t );
 
-		__make_bezier_warp_vertices( _instance, &bezierWarp, _matrix, _renderMesh );
+        const ae_vector2_t * current_beziers = bezier_warp_frame_current->beziers;
+        const ae_vector2_t * next_beziers = bezier_warp_frame_next->beziers;
+
+		linerp_f2( bezierWarp.beziers[0], current_beziers[0], next_beziers[0], _t );
+		linerp_f2( bezierWarp.beziers[1], current_beziers[1], next_beziers[1], _t );
+		linerp_f2( bezierWarp.beziers[2], current_beziers[2], next_beziers[2], _t );
+		linerp_f2( bezierWarp.beziers[3], current_beziers[3], next_beziers[3], _t );
+		linerp_f2( bezierWarp.beziers[4], current_beziers[4], next_beziers[4], _t );
+		linerp_f2( bezierWarp.beziers[5], current_beziers[5], next_beziers[5], _t );
+		linerp_f2( bezierWarp.beziers[6], current_beziers[6], next_beziers[6], _t );
+		linerp_f2( bezierWarp.beziers[7], current_beziers[7], next_beziers[7], _t );
+
+		__make_bezier_warp_vertices( _instance, &bezierWarp, _matrix, _render );
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-static void __compute_movie_node( const aeMovieComposition * _composition, const aeMovieNode * _node, aeMovieRenderMesh * _vertices )
+static uint32_t __compute_movie_node_frame( const aeMovieNode * _node, ae_bool_t _interpolate, float * _t )
+{
+    const aeMovieLayerData * layer = _node->layer;
+
+    float frameDurationInv = layer->composition->frameDurationInv;
+
+    uint32_t frame;
+
+    if( layer->reverse_time == AE_TRUE )
+    {
+        float frame_time = (_node->out_time - _node->in_time - _node->current_time) * frameDurationInv;
+
+        frame = (uint32_t)frame_time;
+
+        if( _interpolate == AE_TRUE )
+        {
+            *_t = frame_time - (float)frame;
+        }
+    }
+    else
+    {
+        float frame_time = (_node->current_time) * frameDurationInv;
+
+        frame = (uint32_t)frame_time;
+
+        if( _interpolate == AE_TRUE )
+        {
+            *_t = frame_time - (float)frame;
+        }
+    }
+
+    return frame;
+}
+//////////////////////////////////////////////////////////////////////////
+static void __compute_movie_node( const aeMovieComposition * _composition, const aeMovieNode * _node, aeMovieRenderMesh * _render, ae_bool_t _trackmatte )
 {
 	const aeMovieInstance * instance = _composition->movie_data->instance;
 	const aeMovieLayerData * layer = _node->layer;
@@ -1125,82 +1196,46 @@ static void __compute_movie_node( const aeMovieComposition * _composition, const
 
 	uint8_t layer_type = layer->type;
 
-	_vertices->layer_type = layer_type;
+	_render->layer_type = layer_type;
 
-	_vertices->blend_mode = _node->blend_mode;
+	_render->blend_mode = _node->blend_mode;
 
 	if( resource != AE_NULL )
 	{
-		_vertices->resource_type = resource->type;
-		_vertices->resource_data = resource->data;
+		_render->resource_type = resource->type;
+		_render->resource_data = resource->data;
 	}
 	else
 	{
-		_vertices->resource_type = AE_MOVIE_RESOURCE_NONE;
-		_vertices->resource_data = AE_NULL;
+		_render->resource_type = AE_MOVIE_RESOURCE_NONE;
+		_render->resource_data = AE_NULL;
 	}
 
-	_vertices->camera_data = _node->camera_data;
-	_vertices->element_data = _node->element_data;
+	_render->camera_data = _node->camera_data;
+	_render->element_data = _node->element_data;
 
 	if( _node->track_matte != AE_NULL && _node->track_matte->active == AE_TRUE )
 	{
-		_vertices->track_matte_data = _node->track_matte->track_matte_data;
+		_render->track_matte_data = _node->track_matte->track_matte_data;
 	}
 	else
 	{
-		_vertices->track_matte_data = AE_NULL;
+		_render->track_matte_data = AE_NULL;
 	}
 
-	float frameDurationInv = layer->composition->frameDurationInv;
-
-	uint32_t frame;
 	float t_frame = 0.f;
-
-	if( layer->reverse_time == AE_TRUE )
-	{
-		float frame_time = (_node->out_time - _node->in_time - _node->current_time) * frameDurationInv;
-
-		frame = (uint32_t)frame_time;
-
-		if( interpolate == AE_TRUE )
-		{
-			t_frame = frame_time - (float)frame;
-		}
-	}
-	else
-	{
-		float frame_time = (_node->current_time) * frameDurationInv;
-
-		frame = (uint32_t)frame_time;
-
-		if( interpolate == AE_TRUE )
-		{
-			t_frame = frame_time - (float)frame;
-		}
-	}
+	uint32_t frame = __compute_movie_node_frame( _node, interpolate, &t_frame );
 
 	switch( layer_type )
 	{
 	case AE_MOVIE_LAYER_TYPE_SHAPE:
 		{
-			aeMovieResourceShape * resource_shape = (aeMovieResourceShape *)resource;
+            __make_layer_mesh_vertices(layer->mesh, frame, _node->matrix, _render);
 
-			if( resource_shape->immutable == AE_TRUE )
-			{
-				__make_mesh_vertices( &resource_shape->immutable_mesh, _node->matrix, _vertices );
-			}
-			else
-			{
-				const aeMovieMesh * mesh = resource_shape->meshes + frame;
-
-				__make_mesh_vertices( mesh, _node->matrix, _vertices );
-			}
-
-			_vertices->r = _node->r * resource_shape->r;
-			_vertices->g = _node->g * resource_shape->g;
-			_vertices->b = _node->b * resource_shape->b;
-			_vertices->a = _node->opacity * resource_shape->a;
+			_render->r = _node->r;
+			_render->g = _node->g;
+			_render->b = _node->b;
+			_render->a = _node->opacity;
 		}break;
 	case AE_MOVIE_LAYER_TYPE_SOLID:
 		{
@@ -1208,24 +1243,24 @@ static void __compute_movie_node( const aeMovieComposition * _composition, const
 
 			if( layer->mesh != AE_NULL )
 			{
-				__make_layer_mesh_vertices( layer->mesh, frame, _node->matrix, _vertices );
+				__make_layer_mesh_vertices( layer->mesh, frame, _node->matrix, _render );
 			}
 			else if( layer->bezier_warp != AE_NULL )
 			{
-				__make_layer_bezier_warp_vertices( instance, layer->bezier_warp, frame, t_frame, _node->matrix, _vertices );
+				__make_layer_bezier_warp_vertices( instance, layer->bezier_warp, frame, t_frame, _node->matrix, _render );
 			}
 			else
 			{
 				float width = resource_solid->width;
 				float height = resource_solid->height;
 
-				__make_layer_sprite_vertices( instance, 0.f, 0.f, width, height, _node->matrix, _vertices );
+				__make_layer_sprite_vertices( instance, 0.f, 0.f, width, height, _node->matrix, _render);
 			}
 
-			_vertices->r = _node->r * resource_solid->r;
-			_vertices->g = _node->g * resource_solid->g;
-			_vertices->b = _node->b * resource_solid->b;
-			_vertices->a = _node->opacity;
+			_render->r = _node->r * resource_solid->r;
+			_render->g = _node->g * resource_solid->g;
+			_render->b = _node->b * resource_solid->b;
+			_render->a = _node->opacity;
 		}break;
 	case AE_MOVIE_LAYER_TYPE_SEQUENCE:
 		{
@@ -1255,16 +1290,20 @@ static void __compute_movie_node( const aeMovieComposition * _composition, const
 
 			aeMovieResourceImage * resource_image = resource_sequence->images[frame_sequence];
 
-			_vertices->resource_type = resource_image->type;
-			_vertices->resource_data = resource_image->data;
-
+			_render->resource_type = resource_image->type;
+			_render->resource_data = resource_image->data;
+			
 			if( layer->mesh != AE_NULL )
 			{
-				__make_layer_mesh_vertices( layer->mesh, frame, _node->matrix, _vertices );
+				__make_layer_mesh_vertices( layer->mesh, frame, _node->matrix, _render );
 			}
 			else if( layer->bezier_warp != AE_NULL )
 			{
-				__make_layer_bezier_warp_vertices( instance, layer->bezier_warp, frame, t_frame, _node->matrix, _vertices );
+				__make_layer_bezier_warp_vertices( instance, layer->bezier_warp, frame, t_frame, _node->matrix, _render );
+			}
+			else if( resource_image->mesh != AE_NULL && _trackmatte == AE_FALSE )
+			{
+				__make_mesh_vertices( resource_image->mesh, _node->matrix, _render );
 			}
 			else
 			{
@@ -1274,13 +1313,13 @@ static void __compute_movie_node( const aeMovieComposition * _composition, const
 				float width = resource_image->trim_width;
 				float height = resource_image->trim_height;
 
-				__make_layer_sprite_vertices( instance, offset_x, offset_y, width, height, _node->matrix, _vertices );
+				__make_layer_sprite_vertices( instance, offset_x, offset_y, width, height, _node->matrix, _render );
 			}
 
-			_vertices->r = _node->r;
-			_vertices->g = _node->g;
-			_vertices->b = _node->b;
-			_vertices->a = _node->opacity;
+			_render->r = _node->r;
+			_render->g = _node->g;
+			_render->b = _node->b;
+			_render->a = _node->opacity;
 		}break;
 	case AE_MOVIE_LAYER_TYPE_VIDEO:
 		{
@@ -1288,24 +1327,24 @@ static void __compute_movie_node( const aeMovieComposition * _composition, const
 
 			if( layer->mesh != AE_NULL )
 			{
-				__make_layer_mesh_vertices( layer->mesh, frame, _node->matrix, _vertices );
+				__make_layer_mesh_vertices( layer->mesh, frame, _node->matrix, _render );
 			}
 			else if( layer->bezier_warp != AE_NULL )
 			{
-				__make_layer_bezier_warp_vertices( instance, layer->bezier_warp, frame, t_frame, _node->matrix, _vertices );
+				__make_layer_bezier_warp_vertices( instance, layer->bezier_warp, frame, t_frame, _node->matrix, _render );
 			}
 			else
 			{
 				float width = resource_video->width;
 				float height = resource_video->height;
 
-				__make_layer_sprite_vertices( instance, 0.f, 0.f, width, height, _node->matrix, _vertices );
+				__make_layer_sprite_vertices( instance, 0.f, 0.f, width, height, _node->matrix, _render );
 			}
 
-			_vertices->r = _node->r;
-			_vertices->g = _node->g;
-			_vertices->b = _node->b;
-			_vertices->a = _node->opacity;
+			_render->r = _node->r;
+			_render->g = _node->g;
+			_render->b = _node->b;
+			_render->a = _node->opacity;
 		}break;
 	case AE_MOVIE_LAYER_TYPE_IMAGE:
 		{
@@ -1313,11 +1352,15 @@ static void __compute_movie_node( const aeMovieComposition * _composition, const
 
 			if( layer->mesh != AE_NULL )
 			{
-				__make_layer_mesh_vertices( layer->mesh, frame, _node->matrix, _vertices );
+				__make_layer_mesh_vertices( layer->mesh, frame, _node->matrix, _render );
 			}
 			else if( layer->bezier_warp != AE_NULL )
 			{
-				__make_layer_bezier_warp_vertices( instance, layer->bezier_warp, frame, t_frame, _node->matrix, _vertices );
+				__make_layer_bezier_warp_vertices( instance, layer->bezier_warp, frame, t_frame, _node->matrix, _render );
+			}
+			else if( resource_image->mesh != AE_NULL && _trackmatte == AE_FALSE )
+			{
+				__make_mesh_vertices( resource_image->mesh, _node->matrix, _render );
 			}
 			else
 			{
@@ -1327,23 +1370,23 @@ static void __compute_movie_node( const aeMovieComposition * _composition, const
 				float width = resource_image->trim_width;
 				float height = resource_image->trim_height;
 
-				__make_layer_sprite_vertices( instance, offset_x, offset_y, width, height, _node->matrix, _vertices );
+				__make_layer_sprite_vertices( instance, offset_x, offset_y, width, height, _node->matrix, _render );
 			}
 
-			_vertices->r = _node->r;
-			_vertices->g = _node->g;
-			_vertices->b = _node->b;
-			_vertices->a = _node->opacity;
+			_render->r = _node->r;
+			_render->g = _node->g;
+			_render->b = _node->b;
+			_render->a = _node->opacity;
 		}break;
 	default:
 		{
-			_vertices->vertexCount = 0;
-			_vertices->indexCount = 0;
+			_render->vertexCount = 0;
+			_render->indexCount = 0;
 
-			_vertices->r = _node->r;
-			_vertices->g = _node->g;
-			_vertices->b = _node->b;
-			_vertices->a = _node->opacity;
+			_render->r = _node->r;
+			_render->g = _node->g;
+			_render->b = _node->b;
+			_render->a = _node->opacity;
 		}break;
 	}
 }
@@ -1364,7 +1407,7 @@ static void __update_movie_composition_track_matte_state( aeMovieComposition * _
 	}
 
 	aeMovieRenderMesh vertices;
-	__compute_movie_node( _composition, _node, &vertices );
+	__compute_movie_node( _composition, _node, &vertices, AE_TRUE );
 
 	if( _begin == AE_TRUE )
 	{
@@ -1460,11 +1503,10 @@ static void __update_movie_composition_node( aeMovieComposition * _composition, 
 	float loopBegin = __get_movie_loop_work_begin( _composition );
 	float loopEnd = __get_movie_loop_work_end( _composition );
 
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+	
+	aeMovieNode *it_node = _composition->nodes;
+	aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		aeMovieNode * node = it_node;
 
@@ -1568,11 +1610,10 @@ static void __skip_movie_composition_node( aeMovieComposition * _composition, ui
 	float loopBegin = 0.f;
 	float loopEnd = duration;
 
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+	
+	aeMovieNode	*it_node = _composition->nodes;
+	aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		aeMovieNode * node = it_node;
 
@@ -1752,12 +1793,10 @@ float ae_get_movie_composition_duration( const aeMovieComposition * _composition
 ae_bool_t ae_set_movie_composition_slot( aeMovieComposition * _composition, const ae_char_t * _slotName, void * _slotData )
 {
 	const aeMovieInstance * instance = _composition->movie_data->instance;
-
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+	
+	aeMovieNode *it_node = _composition->nodes;
+	aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		aeMovieNode * node = it_node;
 
@@ -1781,17 +1820,15 @@ ae_bool_t ae_set_movie_composition_slot( aeMovieComposition * _composition, cons
 	return AE_FALSE;
 }
 //////////////////////////////////////////////////////////////////////////
-void * ae_get_movie_composition_slot( aeMovieComposition * _composition, const ae_char_t * _slotName )
+void * ae_get_movie_composition_slot( const aeMovieComposition * _composition, const ae_char_t * _slotName )
 {
 	const aeMovieInstance * instance = _composition->movie_data->instance;
-
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+	
+    const aeMovieNode *it_node = _composition->nodes;
+    const aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
-		aeMovieNode * node = it_node;
+        const aeMovieNode * node = it_node;
 
 		const aeMovieLayerData * layer = node->layer;
 
@@ -1811,17 +1848,15 @@ void * ae_get_movie_composition_slot( aeMovieComposition * _composition, const a
 	return AE_NULL;
 }
 //////////////////////////////////////////////////////////////////////////
-ae_bool_t ae_has_movie_composition_slot( aeMovieComposition * _composition, const ae_char_t * _slotName )
+ae_bool_t ae_has_movie_composition_slot( const aeMovieComposition * _composition, const ae_char_t * _slotName )
 {
 	const aeMovieInstance * instance = _composition->movie_data->instance;
-
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+		
+    const aeMovieNode *it_node = _composition->nodes;
+    const aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
-		aeMovieNode * node = it_node;
+        const aeMovieNode * node = it_node;
 
 		const aeMovieLayerData * layer = node->layer;
 
@@ -1844,12 +1879,10 @@ ae_bool_t ae_has_movie_composition_slot( aeMovieComposition * _composition, cons
 void * ae_remove_movie_composition_slot( aeMovieComposition * _composition, const ae_char_t * _slotName )
 {
 	const aeMovieInstance * instance = _composition->movie_data->instance;
-
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+		
+	aeMovieNode *it_node = _composition->nodes;
+	aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		aeMovieNode * node = it_node;
 
@@ -1875,14 +1908,54 @@ void * ae_remove_movie_composition_slot( aeMovieComposition * _composition, cons
 	return AE_NULL;
 }
 //////////////////////////////////////////////////////////////////////////
-ae_bool_t ae_compute_movie_mesh( const aeMovieComposition * _composition, uint32_t * _iterator, aeMovieRenderMesh * _vertices )
+ae_bool_t ae_get_movie_composition_socket(const aeMovieComposition * _composition, const ae_char_t * _slotName, const aeMoviePolygon ** _polygon)
+{
+    const aeMovieInstance * instance = _composition->movie_data->instance;
+
+    const aeMovieNode *it_node = _composition->nodes;
+    const aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+    for( ; it_node != it_node_end; ++it_node )
+    {
+        const aeMovieNode * node = it_node;
+
+        const aeMovieLayerData * layer = node->layer;
+
+        if( layer->type != AE_MOVIE_LAYER_TYPE_SOCKET )
+        {
+            continue;
+        }
+
+        if( STRNCMP(instance, layer->name, _slotName, AE_MOVIE_MAX_LAYER_NAME) != 0 )
+        {
+            continue;
+        }
+
+        if( layer->polygon->immutable == AE_TRUE )
+        {
+            *_polygon = &layer->polygon->immutable_polygon;
+
+            return AE_TRUE;
+        }
+        else
+        {
+            uint32_t frame = __compute_movie_node_frame(node, AE_FALSE, AE_NULL);
+
+            *_polygon = layer->polygon->polygons + frame;
+        }
+    }
+
+    return AE_FALSE;
+}
+//////////////////////////////////////////////////////////////////////////
+ae_bool_t ae_compute_movie_mesh( const aeMovieComposition * _composition, uint32_t * _iterator, aeMovieRenderMesh * _render )
 {
 	uint32_t render_node_index = *_iterator;
 	uint32_t render_node_max_count = _composition->node_count;
 
 	const aeMovieInstance * instance = _composition->movie_data->instance;
 
-	for( uint32_t iterator = render_node_index; iterator != render_node_max_count; ++iterator )
+	uint32_t iterator = render_node_index;
+	for( ; iterator != render_node_max_count; ++iterator )
 	{
 		const aeMovieNode * node = _composition->nodes + iterator;
 
@@ -1905,7 +1978,7 @@ ae_bool_t ae_compute_movie_mesh( const aeMovieComposition * _composition, uint32
 
 		*_iterator = iterator + 1;
 
-		__compute_movie_node( _composition, node, _vertices );
+		__compute_movie_node( _composition, node, _render, AE_FALSE );
 
 		return AE_TRUE;
 	}
@@ -1913,15 +1986,13 @@ ae_bool_t ae_compute_movie_mesh( const aeMovieComposition * _composition, uint32
 	return AE_FALSE;
 }
 //////////////////////////////////////////////////////////////////////////
-ae_bool_t ae_get_movie_composition_node_in_out_time( aeMovieComposition * _composition, const ae_char_t * _layerName, aeMovieLayerTypeEnum _type, float * _in, float * _out )
+ae_bool_t ae_get_movie_composition_node_in_out_time( const aeMovieComposition * _composition, const ae_char_t * _layerName, aeMovieLayerTypeEnum _type, float * _in, float * _out )
 {
 	const aeMovieInstance * instance = _composition->movie_data->instance;
-
-	for( aeMovieNode
-		*it_node = _composition->nodes,
-		*it_node_end = _composition->nodes + _composition->node_count;
-	it_node != it_node_end;
-	++it_node )
+    	
+	const aeMovieNode *it_node = _composition->nodes;
+    const aeMovieNode *it_node_end = _composition->nodes + _composition->node_count;
+	for( ; it_node != it_node_end; ++it_node )
 	{
 		const aeMovieNode * node = it_node;
 
