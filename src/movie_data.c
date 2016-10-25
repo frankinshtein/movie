@@ -8,7 +8,7 @@
 #	define AE_MOVIE_MAX_COMPOSITION_NAME 128
 #	endif
 //////////////////////////////////////////////////////////////////////////
-static const uint32_t ae_movie_version = 6;
+static const uint32_t ae_movie_version = 7;
 //////////////////////////////////////////////////////////////////////////
 aeMovieData * ae_create_movie_data(const aeMovieInstance * _instance)
 {
@@ -211,11 +211,9 @@ static aeMovieResult __load_movie_data_layer(const aeMovieData * _movieData, con
             {
                 aeMovieLayerTimeremap * layer_timeremap = NEW(instance, aeMovieLayerTimeremap);
 
-                uint32_t frame_count = READZ(_stream);
+				layer_timeremap->times = NEWN( instance, float, _layer->frame_count );
 
-                layer_timeremap->times = NEWN(instance, float, frame_count);
-
-                READN(_stream, layer_timeremap->times, frame_count);
+				READN( _stream, layer_timeremap->times, _layer->frame_count );
 
                 _layer->timeremap = layer_timeremap;
             }break;
@@ -233,12 +231,10 @@ static aeMovieResult __load_movie_data_layer(const aeMovieData * _movieData, con
                 }
                 else
                 {
-                    uint32_t frame_count = READZ(_stream);
-
-                    layer_mesh->meshes = NEWN(instance, aeMovieMesh, frame_count);
+					layer_mesh->meshes = NEWN( instance, aeMovieMesh, _layer->frame_count );
 
                     aeMovieMesh * it_mesh = layer_mesh->meshes;
-                    aeMovieMesh * it_mesh_end = layer_mesh->meshes + frame_count;
+					aeMovieMesh * it_mesh_end = layer_mesh->meshes + _layer->frame_count;
                     for( ; it_mesh != it_mesh_end; ++it_mesh )
                     {
                         READ_MESH(instance, _stream, it_mesh);
@@ -262,12 +258,10 @@ static aeMovieResult __load_movie_data_layer(const aeMovieData * _movieData, con
                 }
                 else
                 {
-                    uint32_t frame_count = READZ(_stream);
-
-                    layer_bezier_warp->bezier_warps = NEWN(instance, aeMovieBezierWarp, frame_count);
+					layer_bezier_warp->bezier_warps = NEWN( instance, aeMovieBezierWarp, _layer->frame_count );
 
                     aeMovieBezierWarp * it_bezier_warp = layer_bezier_warp->bezier_warps;
-                    aeMovieBezierWarp * it_bezier_warp_end = layer_bezier_warp->bezier_warps + frame_count;
+					aeMovieBezierWarp * it_bezier_warp_end = layer_bezier_warp->bezier_warps + _layer->frame_count;
                     for( ; it_bezier_warp != it_bezier_warp_end; ++it_bezier_warp )
                     {
                         READN(_stream, it_bezier_warp->corners, 4);
@@ -293,11 +287,9 @@ static aeMovieResult __load_movie_data_layer(const aeMovieData * _movieData, con
                 {
                     layer_color_vertex->immutable_color_vertex_r = 1.f;
 
-                    uint32_t frame_count = READZ(_stream);
+					layer_color_vertex->color_vertites_r = NEWN( instance, ae_color_t, _layer->frame_count );
 
-                    layer_color_vertex->color_vertites_r = NEWN(instance, ae_color_t, frame_count);
-
-                    READN(_stream, layer_color_vertex->color_vertites_r, frame_count);
+					READN( _stream, layer_color_vertex->color_vertites_r, _layer->frame_count );
                 }
 
                 layer_color_vertex->immutable_g = READB(_stream);
@@ -312,11 +304,9 @@ static aeMovieResult __load_movie_data_layer(const aeMovieData * _movieData, con
                 {
                     layer_color_vertex->immutable_color_vertex_g = 1.f;
 
-                    uint32_t frame_count = READZ(_stream);
+					layer_color_vertex->color_vertites_g = NEWN( instance, ae_color_t, _layer->frame_count );
 
-                    layer_color_vertex->color_vertites_g = NEWN(instance, ae_color_t, frame_count);
-
-                    READN(_stream, layer_color_vertex->color_vertites_g, frame_count);
+					READN( _stream, layer_color_vertex->color_vertites_g, _layer->frame_count );
                 }
 
                 layer_color_vertex->immutable_b = READB(_stream);
@@ -331,11 +321,9 @@ static aeMovieResult __load_movie_data_layer(const aeMovieData * _movieData, con
                 {
                     layer_color_vertex->immutable_color_vertex_b = 1.f;
 
-                    uint32_t frame_count = READZ(_stream);
+					layer_color_vertex->color_vertites_b = NEWN( instance, ae_color_t, _layer->frame_count );
 
-                    layer_color_vertex->color_vertites_b = NEWN(instance, ae_color_t, frame_count);
-
-                    READN(_stream, layer_color_vertex->color_vertites_b, frame_count);
+					READN( _stream, layer_color_vertex->color_vertites_b, _layer->frame_count );
                 }
 
                 _layer->color_vertex = layer_color_vertex;
@@ -379,8 +367,7 @@ static aeMovieResult __load_movie_data_layer(const aeMovieData * _movieData, con
         }
     }
 
-    uint8_t is_resource_or_composition;
-    READ(_stream, is_resource_or_composition);
+    ae_bool_t is_resource_or_composition = READB( _stream);
 
     if( is_resource_or_composition == AE_TRUE )
     {
@@ -517,6 +504,8 @@ static aeMovieResult __load_movie_data_composition(const aeMovieData * _movieDat
 {
     READ_STRING(_movieData->instance, _stream, _compositionData->name);
 
+    READ( _stream, _compositionData->master );
+
     READ(_stream, _compositionData->width);
     READ(_stream, _compositionData->height);
 
@@ -543,25 +532,25 @@ static aeMovieResult __load_movie_data_composition(const aeMovieData * _movieDat
             }break;
         case 1:
             {
-                READN(_stream, _compositionData->loop_segment, 2);
+                READ(_stream, _compositionData->loop_segment);
 
                 _compositionData->flags |= AE_MOVIE_COMPOSITION_LOOP_SEGMENT;
             }break;
         case 2:
             {
-                READN(_stream, _compositionData->anchor_point, 3);
+                READ(_stream, _compositionData->anchor_point);
 
                 _compositionData->flags |= AE_MOVIE_COMPOSITION_ANCHOR_POINT;
             }break;
         case 3:
             {
-                READN(_stream, _compositionData->offset_point, 3);
+                READ(_stream, _compositionData->offset_point);
 
                 _compositionData->flags |= AE_MOVIE_COMPOSITION_OFFSET_POINT;
             }break;
         case 4:
             {
-                READN(_stream, _compositionData->bounds, 4);
+                READ(_stream, _compositionData->bounds);
 
                 _compositionData->flags |= AE_MOVIE_COMPOSITION_BOUNDS;
             }break;
@@ -699,9 +688,9 @@ aeMovieResult ae_load_movie_data(aeMovieData * _movieData, const aeMovieStream *
                 READ(_stream, resource->base_width);
                 READ(_stream, resource->base_height);
 				
-				ae_bool_t trim = READB( _stream );
+				ae_bool_t is_trim = READB( _stream );
 
-				if( trim == AE_TRUE )
+				if( is_trim == AE_TRUE )
 				{
 					READ( _stream, resource->trim_width );
 					READ( _stream, resource->trim_height );
@@ -716,9 +705,9 @@ aeMovieResult ae_load_movie_data(aeMovieData * _movieData, const aeMovieStream *
 					resource->offset_y = 0.f;
 				}
 
-				ae_bool_t mesh = READB( _stream );
+				ae_bool_t is_mesh = READB( _stream );
 
-				if( mesh == AE_TRUE )
+				if( is_mesh == AE_TRUE )
 				{
 					resource->mesh = NEW( _movieData->instance, aeMovieMesh );
 
