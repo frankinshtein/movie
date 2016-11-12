@@ -119,6 +119,7 @@ typedef enum
 	AE_MOVIE_INVALID_VERSION = -3,
 } aeMovieResult;
 
+typedef void( *ae_movie_stream_memory_info_t )(void * _data, const char * _buff, size_t _size);
 typedef size_t( *ae_movie_stream_memory_read_t )(void * _data, void * _buff, size_t _size);
 typedef void( *ae_movie_stream_memory_copy_t )(void * _data, const void * _src, void * _dst, size_t _size);
 
@@ -132,12 +133,12 @@ typedef void( *ae_movie_stream_memory_copy_t )(void * _data, const void * _src, 
 
 typedef struct
 {
+	ae_movie_stream_memory_info_t memory_info;
 	ae_movie_stream_memory_read_t memory_read;
+	ae_movie_stream_memory_copy_t memory_copy;
 	void * data;
 
 #	ifdef AE_MOVIE_STREAM_CACHE
-	ae_movie_stream_memory_copy_t memory_copy;
-
 	size_t carriage;
 	size_t capacity;
 	size_t reading;
