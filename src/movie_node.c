@@ -237,6 +237,13 @@ static void __update_movie_composition_node_matrix( aeMovieComposition * _compos
 
 		float t_relative = frame_time - (float)frame_relative;
 
+		if( frame_relative >= node_relative->layer->frame_count )
+		{
+			frame_relative = node_relative->layer->frame_count - 1;
+
+			t_relative = 0.f;
+		}
+
 		__update_movie_composition_node_matrix( _composition, node_relative, _revision, frame_relative, _interpolate, t_relative );
 	}
 
@@ -1135,8 +1142,10 @@ static void __make_bezier_warp_vertices( const aeMovieInstance * _instance, cons
 		{
 			const float x = __bezier_warp_x( _bezierWarp, du, dv );
 			const float y = __bezier_warp_y( _bezierWarp, du, dv );
-
-			const float position[2] = {x, y};
+			
+			ae_vector2_t position;
+			position[0] = x;
+			position[1] = y;
 
 			mul_v3_v2_m4( *positions++, position, _matrix );
 
