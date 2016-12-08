@@ -45,12 +45,12 @@ static const float table_inv_255[] = {
 //////////////////////////////////////////////////////////////////////////
 ae_bool_t equal_f_z( float _a )
 {
-	return (_a >= 0.f + f_neps) && (_a <= 0.f + f_eps) ? AE_TRUE : AE_FALSE;
+	return ((_a >= 0.f + f_neps) && (_a <= 0.f + f_eps)) ? AE_TRUE : AE_FALSE;
 }
 //////////////////////////////////////////////////////////////////////////
 ae_bool_t equal_f_f( float _a, float _b )
 {
-	return (_a >= _b + f_neps) && (_a <= _b + f_eps) ? AE_TRUE : AE_FALSE;
+	return ((_a >= _b + f_neps) && (_a <= _b + f_eps)) ? AE_TRUE : AE_FALSE;
 }
 //////////////////////////////////////////////////////////////////////////
 float min_f_f( float _a, float _b )
@@ -326,7 +326,7 @@ void ae_movie_make_transformation2d_m4( ae_matrix4_t _lm, const ae_vector2_t _po
 		mat_scale[3 * 4 + 2] = 0.f;
 
 		ae_matrix4_t mat_rotate;
-		make_quaternion_m4( mat_rotate, _quaternion );
+		make_quaternionzw_m4( mat_rotate, _quaternion );
 
 		mul_m4_m4( _lm, mat_scale, mat_rotate );
 
