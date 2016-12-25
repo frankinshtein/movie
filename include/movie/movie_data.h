@@ -92,6 +92,7 @@ typedef struct aeMovieLayerData
 
 	ae_bool_t is_track_matte;
 	ae_bool_t has_track_matte;
+	struct aeMovieLayerData * track_matte;
 
 	uint32_t frame_count;
 
@@ -183,7 +184,7 @@ typedef void * (*ae_movie_data_resource_provider_t)(const aeMovieResource * _res
 aeMovieStream * ae_create_movie_stream( const aeMovieInstance * _instance, ae_movie_stream_memory_read_t _read, ae_movie_stream_memory_copy_t _copy, void * _data );
 void ae_delete_movie_stream( aeMovieStream * _stream );
 
-aeMovieResult ae_load_movie_data( aeMovieData * _movieData, aeMovieStream * _stream, ae_movie_data_resource_provider_t _provider, void * _data );
+ae_result_t ae_load_movie_data( aeMovieData * _movieData, aeMovieStream * _stream, ae_movie_data_resource_provider_t _provider, void * _data );
 
 typedef ae_bool_t( *ae_movie_data_tream_image_resource_t )(const aeMovieResourceImage * _imageResource, float * base_width, float * base_height, float * trim_width, float * trim_height, float * offset_x, float * offset_y, void * _data);
 
@@ -192,6 +193,8 @@ void ae_trim_image_resources( aeMovieData * _movieData, ae_movie_data_tream_imag
 const aeMovieCompositionData * ae_get_movie_composition_data( const aeMovieData * _movieData, const ae_char_t * _name );
 
 float ae_get_movie_composition_data_duration( const aeMovieCompositionData * _compositionData );
+
+ae_bool_t ae_get_movie_composition_data_master( const aeMovieCompositionData * _compositionData );
 
 uint32_t ae_get_movie_composition_data_count( const aeMovieData * _movieData );
 const aeMovieCompositionData * ae_get_movie_composition_data_by_index( const aeMovieData * _movieData, uint32_t _index );
