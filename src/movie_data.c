@@ -5,7 +5,7 @@
 #	include "movie_stream.h"
 
 //////////////////////////////////////////////////////////////////////////
-static const uint32_t ae_movie_version = 9;
+static const uint32_t ae_movie_version = 10;
 //////////////////////////////////////////////////////////////////////////
 aeMovieData * ae_create_movie_data( const aeMovieInstance * _instance )
 {
@@ -38,8 +38,6 @@ static void __ae_delete_layer_mesh_t( const aeMovieInstance * _instance, const a
 			const aeMovieMesh * mesh = it_mesh;
 
 			__ae_delete_mesh_t( _instance, mesh );
-
-			DELETE( _instance, mesh );
 		}
 
 		DELETEN( _instance, _layerMesh->meshes );
@@ -117,6 +115,13 @@ void ae_delete_movie_data( const aeMovieData * _movieData )
 				DELETEN( instance, resource->path );
 
 				(void)resource;
+			}break;
+		case AE_MOVIE_RESOURCE_SLOT:
+			{
+				const aeMovieResourceSlot * resource = (const aeMovieResourceSlot *)base_resource;
+
+				(void)resource;
+
 			}break;
 		}
 
@@ -885,6 +890,18 @@ ae_result_t ae_load_movie_data( aeMovieData * _movieData, aeMovieStream * _strea
 				aeMovieResourceParticle * resource = NEW( _movieData->instance, aeMovieResourceParticle );
 
 				READ_STRING( _stream, resource->path );
+
+				*it_resource = (aeMovieResource *)resource;
+
+				resource->type = type;
+				resource->data = (*_provider)(*it_resource, _data);
+			}break;
+		case AE_MOVIE_RESOURCE_SLOT:
+			{
+				aeMovieResourceSlot * resource = NEW( _movieData->instance, aeMovieResourceSlot );
+
+				READ( _stream, resource->width );
+				READ( _stream, resource->height );
 
 				*it_resource = (aeMovieResource *)resource;
 
