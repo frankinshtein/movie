@@ -86,7 +86,7 @@ typedef struct aeMovieCompositionProviders
 
 typedef struct aeMovieComposition aeMovieComposition;
 
-aeMovieComposition * ae_create_movie_composition( const aeMovieData * _movieData, const aeMovieCompositionData * _compositionData, const aeMovieCompositionProviders * providers, void * _data );
+aeMovieComposition * ae_create_movie_composition( const aeMovieData * _movieData, const aeMovieCompositionData * _compositionData, ae_bool_t _interpolate, const aeMovieCompositionProviders * providers, void * _data );
 void ae_destroy_movie_composition( const aeMovieComposition * _composition );
 
 ae_bool_t ae_get_movie_composition_anchor_point( const aeMovieComposition * _composition, ae_vector3_t _point );
@@ -121,5 +121,17 @@ ae_bool_t ae_compute_movie_mesh( const aeMovieComposition * _composition, uint32
 uint32_t ae_get_movie_render_mesh_count( const aeMovieComposition * _composition );
 
 ae_bool_t ae_get_movie_composition_node_in_out_time( const aeMovieComposition * _composition, const ae_char_t * _layerName, aeMovieLayerTypeEnum _type, float * _in, float * _out );
+
+void ae_play_movie_sub_composition( aeMovieComposition * _composition, const ae_char_t * _submovieName, float _time );
+void ae_stop_movie_sub_composition( aeMovieComposition * _composition, const ae_char_t * _submovieName );
+void ae_interrupt_movie_sub_composition( aeMovieComposition * _composition, const ae_char_t * _submovieName, ae_bool_t _skip, ae_bool_t _loop );
+
+void ae_set_movie_sub_composition_time( aeMovieComposition * _composition, const ae_char_t * _submovieName, float _timing );
+float ae_get_movie_sub_composition_time( const aeMovieComposition * _composition, const ae_char_t * _submovieName );
+
+void ae_set_movie_sub_composition_loop( aeMovieComposition * _composition, const ae_char_t * _submovieName, ae_bool_t _loop );
+
+ae_bool_t ae_set_movie_sub_composition_work_area( aeMovieComposition * _composition, const ae_char_t * _submovieName, float _begin, float _end );
+void ae_remove_movie_sub_composition_work_area( aeMovieComposition * _composition, const ae_char_t * _submovieName );
 
 #endif
