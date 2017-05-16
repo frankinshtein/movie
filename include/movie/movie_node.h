@@ -183,7 +183,7 @@ void ae_update_movie_composition( aeMovieComposition * _composition, float _timi
 ae_bool_t ae_set_movie_composition_slot( const aeMovieComposition * _composition, const ae_char_t * _slotName, void * _slotData );
 void * ae_get_movie_composition_slot( const aeMovieComposition * _composition, const ae_char_t * _slotName );
 ae_bool_t ae_has_movie_composition_slot( const aeMovieComposition * _composition, const ae_char_t * _slotName );
-void * ae_remove_movie_composition_slot( aeMovieComposition * _composition, const ae_char_t * _slotName );
+void * ae_remove_movie_composition_slot( const aeMovieComposition * _composition, const ae_char_t * _slotName );
 
 ae_bool_t ae_get_movie_composition_socket( const aeMovieComposition * _composition, const ae_char_t * _slotName, const aeMoviePolygon ** _polygon );
 

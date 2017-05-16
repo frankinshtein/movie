@@ -1938,8 +1938,14 @@ static void __update_movie_composition_node( const aeMovieComposition * _composi
 
 		float frameDurationInv = layer->composition_data->frameDurationInv;
 
-		float in_time = (_beginTime >= loopBegin && node->in_time <= loopBegin && _endTime >= loopBegin && animation_interrupt == AE_FALSE && animation_loop == AE_TRUE && layer->type != AE_MOVIE_LAYER_TYPE_EVENT) ? loopBegin : node->in_time;
-		float out_time = (node->out_time >= loopEnd && animation_interrupt == AE_FALSE && animation_loop == AE_TRUE && layer->type != AE_MOVIE_LAYER_TYPE_EVENT) ? loopEnd : node->out_time;
+		ae_bool_t test_time = (_beginTime >= loopBegin
+			&& _endTime < loopEnd
+			&& animation_interrupt == AE_FALSE
+			&& animation_loop == AE_TRUE
+			&& layer->type != AE_MOVIE_LAYER_TYPE_EVENT);
+
+		float in_time = (test_time == AE_TRUE && node->in_time <= loopBegin) ? loopBegin : node->in_time;
+		float out_time = (test_time == AE_TRUE && node->out_time >= loopEnd) ? loopEnd : node->out_time;
 
 		uint32_t beginFrame = (uint32_t)(_beginTime * frameDurationInv + 0.001f);
 		uint32_t endFrame = (uint32_t)(_endTime * frameDurationInv + 0.001f);
@@ -2430,7 +2436,7 @@ ae_bool_t ae_has_movie_composition_slot( const aeMovieComposition * _composition
 	return AE_FALSE;
 }
 //////////////////////////////////////////////////////////////////////////
-void * ae_remove_movie_composition_slot( aeMovieComposition * _composition, const ae_char_t * _slotName )
+void * ae_remove_movie_composition_slot( const aeMovieComposition * _composition, const ae_char_t * _slotName )
 {
 	const aeMovieInstance * instance = _composition->movie_data->instance;
 
