@@ -1,3 +1,32 @@
+/******************************************************************************
+* libMOVIE Software License v1.0
+*
+* Copyright (c) 2016-2017, Yuriy Levchenko <irov13@mail.ru>
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the libMOVIE
+* software and derivative works solely for personal or internal
+* use. Without the written permission of Yuriy Levchenko, you may not (a) modify, translate,
+* adapt, or develop new applications using the libMOVIE or otherwise
+* create derivative works or improvements of the libMOVIE or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY YURIY LEVCHENKO "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL YURIY LEVCHENKO BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION,
+* OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+* OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+* ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
+
 #	ifndef MOVIE_STRUCT_H_
 #	define MOVIE_STRUCT_H_
 
@@ -6,122 +35,401 @@
 #	include "movie/movie_node.h"
 
 //////////////////////////////////////////////////////////////////////////
-typedef struct aeMovieInstance
-{	
-	ae_movie_alloc_t memory_alloc;
-	ae_movie_alloc_n_t memory_alloc_n;
-	ae_movie_free_t memory_free;
-	ae_movie_free_n_t memory_free_n;	
-	ae_movie_strncmp_t strncmp;
-	ae_movie_logger_t logger;
-	void * instance_data;
+#	ifndef AE_MOVIE_BEZIER_WARP_BASE_GRID
+#	define AE_MOVIE_BEZIER_WARP_BASE_GRID 7U
+#	endif
+
+//////////////////////////////////////////////////////////////////////////
+typedef struct aeMovieBezierWarp
+{
+    ae_vector2_t corners[4];
+    ae_vector2_t beziers[8];
+
+} aeMovieBezierWarp;
+//////////////////////////////////////////////////////////////////////////
+typedef struct aeMovieLayerExtensions
+{
+    const aeMovieLayerTimeremap * timeremap;
+    const aeMovieLayerMesh * mesh;
+    const aeMovieLayerBezierWarp * bezier_warp;
+    const aeMovieLayerColorVertex * color_vertex;
+    const aeMovieLayerPolygon * polygon;
+    const aeMovieLayerShader * shader;
+    const aeMovieLayerViewport * viewport;
+
+} aeMovieLayerExtensions;
+//////////////////////////////////////////////////////////////////////////
+inline static void __clear_layer_extensions( aeMovieLayerExtensions * _extensions )
+{
+    _extensions->timeremap = AE_NULL;
+    _extensions->mesh = AE_NULL;
+    _extensions->bezier_warp = AE_NULL;
+    _extensions->color_vertex = AE_NULL;
+    _extensions->polygon = AE_NULL;
+    _extensions->shader = AE_NULL;
+    _extensions->viewport = AE_NULL;
+}
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieInstance
+{
+    ae_uint32_t hashmask[5];
+
+    ae_movie_alloc_t memory_alloc;
+    ae_movie_alloc_n_t memory_alloc_n;
+    ae_movie_free_t memory_free;
+    ae_movie_free_n_t memory_free_n;
+    ae_movie_strncmp_t strncmp;
+    ae_movie_logger_t logger;
+    ae_voidptr_t instance_data;
 
     ae_vector2_t sprite_uv[4];
-	uint16_t sprite_indices[6];	
+    ae_uint16_t sprite_indices[6];
 
-    ae_vector2_t bezier_warp_uv[AE_MOVIE_BEZIER_WARP_GRID_VERTEX_COUNT];
-	uint16_t bezier_warp_indices[AE_MOVIE_BEZIER_WARP_GRID_INDICES_COUNT];
-} aeMovieInstance;
+    ae_vector2_t * bezier_warp_uv[10];
+    ae_uint16_t * bezier_warp_indices[10];
+
+    aeMovieLayerExtensions layer_extensions_default;
+};
 //////////////////////////////////////////////////////////////////////////
-typedef struct aeMovieStream
+struct aeMovieStream
 {
-	const aeMovieInstance * instance;
+    const aeMovieInstance * instance;
 
-	ae_movie_stream_memory_read_t memory_read;
-	ae_movie_stream_memory_copy_t memory_copy;
-	void * data;
+    ae_movie_stream_memory_read_t memory_read;
+    ae_movie_stream_memory_copy_t memory_copy;
+    ae_voidptr_t read_data;
+    ae_voidptr_t copy_data;
 
-#	ifdef AE_MOVIE_STREAM_CACHE
-	size_t carriage;
-	size_t capacity;
-	size_t reading;
-
-	uint8_t buff[AE_MOVIE_STREAM_CACHE_BUFFER_SIZE];
-#	endif
-} aeMovieStream;
+    ae_constvoidptr_t buffer;
+    ae_size_t carriage;
+};
 //////////////////////////////////////////////////////////////////////////
-typedef struct aeMovieCompositionAnimation
+struct aeMovieCompositionAnimation
 {
-	ae_bool_t play;
-	ae_bool_t interrupt;
-	ae_bool_t loop;
-			
-	float time;
+    ae_bool_t play;
+    ae_bool_t pause;
+    ae_bool_t interrupt;
+    ae_bool_t loop;
 
-	float loop_segment_begin;
-	float loop_segment_end;
+    ae_time_t time;
 
-	float work_area_begin;
-	float work_area_end;
-} aeMovieCompositionAnimation;
+    ae_time_t loop_segment_begin;
+    ae_time_t loop_segment_end;
+
+    ae_time_t work_area_begin;
+    ae_time_t work_area_end;
+};
 //////////////////////////////////////////////////////////////////////////
-typedef struct aeMovieSubComposition
+struct aeMovieSubComposition
 {
-	const aeMovieLayerData * layer;
+    const aeMovieLayerData * layer;
+    const aeMovieCompositionData * composition_data;
 
-	aeMovieCompositionAnimation * animation;
-} aeMovieSubComposition;
+    struct aeMovieCompositionAnimation * animation;
+};
 //////////////////////////////////////////////////////////////////////////
-typedef struct aeMovieNode
+struct aeMovieNode
 {
-	const aeMovieLayerData * layer;
+    const aeMovieLayerData * layer;
 
-	struct aeMovieNode * relative;
-    struct aeMovieNode * track_matte;
+    struct aeMovieNode * relative_node;
+    struct aeMovieNode * track_matte_node;
 
-	const aeMovieSubComposition * subcomposition;
+    const ae_viewport_t * viewport;
 
-	float start_time;
-	float in_time;
-	float out_time;
+    const aeMovieSubComposition * subcomposition;
 
-	float stretch;
-	float current_time;
+    ae_float_t start_time;
+    ae_float_t in_time;
+    ae_float_t out_time;
 
-	ae_bool_t active;
-	ae_bool_t ignore;
+    ae_float_t stretch;
+    ae_float_t current_time;
 
-	uint32_t animate;
+    ae_bool_t active;
+    ae_bool_t ignore;
+    ae_bool_t enable;
 
-	uint32_t matrix_revision;
-	ae_matrix4_t matrix;
+    ae_uint32_t animate;
 
-	float composition_opactity;
-	float opacity;
+    ae_uint32_t update_revision;
+    ae_matrix4_t matrix;
 
-    float composition_r;
-    float composition_g;
-    float composition_b;
-    float r;    
-    float g;
-    float b;
+    ae_float_t composition_opactity;
+    ae_float_t opacity;
 
-	aeMovieBlendMode blend_mode;
+    ae_float_t composition_r;
+    ae_float_t composition_g;
+    ae_float_t composition_b;
+    ae_float_t r;
+    ae_float_t g;
+    ae_float_t b;
 
-	void * camera_data;
-	void * element_data;
-	void * track_matte_data;
-} aeMovieNode;
+    ae_blend_mode_t blend_mode;
+
+    ae_voidptr_t camera_data;
+    ae_voidptr_t element_data;
+    ae_voidptr_t shader_data;
+    ae_voidptr_t track_matte_data;
+};
 //////////////////////////////////////////////////////////////////////////
-typedef struct aeMovieComposition
+struct aeMovieComposition
 {
-	const aeMovieData * movie_data;
-	const aeMovieCompositionData * composition_data;
+    const aeMovieData * movie_data;
+    const aeMovieCompositionData * composition_data;
 
-	aeMovieCompositionAnimation * animation;
+    struct aeMovieCompositionAnimation * animation;
 
-	uint32_t * update_revision;
+    ae_voidptr_t camera_data;
 
-	ae_bool_t interpolate;
+    ae_uint32_t * update_revision;
 
-	uint32_t node_count;
-	aeMovieNode * nodes;
+    ae_bool_t interpolate;
 
-	uint32_t subcomposition_count;
-	aeMovieSubComposition * subcompositions;
+    ae_uint32_t node_count;
+    aeMovieNode * nodes;
 
-	aeMovieCompositionProviders providers;
-	void * provider_data;
-} aeMovieComposition;
+    ae_uint32_t subcomposition_count;
+    aeMovieSubComposition * subcompositions;
 
+    aeMovieCompositionProviders providers;
+    ae_voidptr_t provider_data;
+};
+//////////////////////////////////////////////////////////////////////////
+typedef struct aeMovieCompositionCameraImuttable
+{
+    ae_float_t target_x;
+    ae_float_t target_y;
+    ae_float_t target_z;
+    ae_float_t position_x;
+    ae_float_t position_y;
+    ae_float_t position_z;
+    ae_float_t quaternion_x;
+    ae_float_t quaternion_y;
+    ae_float_t quaternion_z;
+    ae_float_t quaternion_w;
+} aeMovieCompositionCameraImuttable;
+//////////////////////////////////////////////////////////////////////////
+typedef struct aeMovieCompositionCameraTimeline
+{
+    ae_constvoidptr_t target_x;
+    ae_constvoidptr_t target_y;
+    ae_constvoidptr_t target_z;
+    ae_constvoidptr_t position_x;
+    ae_constvoidptr_t position_y;
+    ae_constvoidptr_t position_z;
+    ae_constvoidptr_t quaternion_x;
+    ae_constvoidptr_t quaternion_y;
+    ae_constvoidptr_t quaternion_z;
+    ae_constvoidptr_t quaternion_w;
+} aeMovieCompositionCameraTimeline;
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieCompositionCamera
+{
+    ae_string_t name;
+
+    ae_float_t zoom;
+    ae_float_t fov;
+
+    ae_uint32_t immutable_property_mask;
+
+    aeMovieCompositionCameraImuttable immutable;
+    aeMovieCompositionCameraTimeline * timeline;
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieCompositionData
+{
+    ae_string_t name;
+
+    ae_bool_t master;
+
+    ae_float_t width;
+    ae_float_t height;
+
+    ae_time_t duration;
+
+    ae_time_t frameDuration;
+    ae_time_t frameDurationInv;
+
+    ae_uint32_t frameCount;
+
+    ae_uint32_t flags;
+
+    ae_vector2_t loop_segment;
+    ae_vector3_t anchor_point;
+    ae_vector3_t offset_point;
+    ae_vector4_t bounds;
+
+    const aeMovieCompositionCamera * camera;
+
+    ae_uint32_t layer_count;
+    const aeMovieLayerData * layers;
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieData
+{
+    const aeMovieInstance * instance;
+
+    ae_string_t name;
+
+    ae_movie_data_resource_provider_t resource_provider;
+    ae_movie_data_resource_deleter_t resource_deleter;
+    ae_voidptr_t resource_ud;
+
+    ae_uint32_t resource_count;
+    const aeMovieResource * const * resources;
+
+    ae_uint32_t composition_count;
+    const aeMovieCompositionData * compositions;
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerData
+{
+    ae_string_t name;
+
+    ae_uint32_t index;
+    aeMovieLayerTypeEnum type;
+
+    ae_bool_t renderable;
+
+    const struct aeMovieCompositionData * composition_data;
+
+    ae_bool_t is_track_matte;
+    ae_bool_t has_track_matte;
+    const struct aeMovieLayerData * track_matte_layer;
+
+    ae_uint32_t frame_count;
+
+    const aeMovieLayerExtensions * extensions;
+
+    const aeMovieResource * resource;
+    const aeMovieCompositionData * sub_composition_data;
+
+    ae_uint32_t parent_index;
+
+    ae_bool_t reverse_time;
+    ae_float_t start_time;
+    ae_float_t in_time;
+    ae_float_t out_time;
+
+    ae_uint32_t blend_mode;
+    ae_bool_t threeD;
+    ae_uint32_t params;
+
+    ae_uint32_t play_count;
+
+    ae_float_t stretch;
+
+    const struct aeMovieLayerTransformation * transformation;
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerTimeremap
+{
+    const ae_float_t * times;
+
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerMesh
+{
+    ae_bool_t immutable;
+    ae_mesh_t immutable_mesh;
+
+    const ae_mesh_t * meshes;
+
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerBezierWarp
+{
+    ae_bool_t immutable;
+    aeMovieBezierWarp immutable_bezier_warp;
+
+    const aeMovieBezierWarp * bezier_warps;
+
+    ae_uint32_t quality;
+
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMoviePropertyValue
+{
+    ae_bool_t immutable;
+
+    ae_float_t immutable_value;
+
+    const ae_float_t * values;
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMoviePropertyColor
+{
+    ae_bool_t immutable_r;
+    ae_bool_t immutable_g;
+    ae_bool_t immutable_b;
+
+    ae_float_t immutable_color_r;
+    ae_float_t immutable_color_g;
+    ae_float_t immutable_color_b;
+
+    const ae_color_t * colors_r;
+    const ae_color_t * colors_g;
+    const ae_color_t * colors_b;
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerColorVertex
+{
+    const struct aeMoviePropertyColor * property_color;
+
+};
+//////////////////////////////////////////////////////////////////////////
+#	define AE_MOVIE_SHADER_PARAMETER_BASE()\
+    ae_string_t name;\
+    ae_string_t uniform;\
+    aeMovieShaderParameterTypeEnum type
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerShaderParameter
+{
+    AE_MOVIE_SHADER_PARAMETER_BASE();
+
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerShaderParameterColor
+{
+    AE_MOVIE_SHADER_PARAMETER_BASE();
+
+    const struct aeMoviePropertyColor * property_color;
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerShaderParameterSlider
+{
+    AE_MOVIE_SHADER_PARAMETER_BASE();
+
+    const struct aeMoviePropertyValue * property_value;
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerShader
+{
+    ae_string_t name;
+    ae_uint32_t version;
+
+    ae_string_t shader_vertex;
+    ae_string_t shader_fragment;
+
+    ae_uint32_t parameter_count;
+    const struct aeMovieLayerShaderParameter ** parameters;
+
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerViewport
+{
+    ae_viewport_t viewport;
+
+};
+//////////////////////////////////////////////////////////////////////////
+struct aeMovieLayerPolygon
+{
+    ae_bool_t immutable;
+    ae_polygon_t immutable_polygon;
+
+    const ae_polygon_t * polygons;
+
+};
+//////////////////////////////////////////////////////////////////////////
 #	endif
