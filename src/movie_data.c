@@ -134,7 +134,7 @@ ae_void_t ae_delete_movie_data( const aeMovieData * _movieData )
             {
                 const aeMovieResourceVideo * resource = (const aeMovieResourceVideo *)base_resource;
 
-                AE_DELETE( instance, resource->path );
+                AE_DELETE_STRING( instance, resource->path );
 
                 (*_movieData->resource_deleter)(type, base_resource->data, _movieData->resource_ud);
 
@@ -143,7 +143,7 @@ ae_void_t ae_delete_movie_data( const aeMovieData * _movieData )
             {
                 const aeMovieResourceSound * resource = (const aeMovieResourceSound *)base_resource;
 
-                AE_DELETE( instance, resource->path );
+                AE_DELETE_STRING( instance, resource->path );
 
                 (*_movieData->resource_deleter)(type, base_resource->data, _movieData->resource_ud);
 
@@ -152,11 +152,11 @@ ae_void_t ae_delete_movie_data( const aeMovieData * _movieData )
             {
                 const aeMovieResourceImage * resource = (const aeMovieResourceImage *)base_resource;
 
-                AE_DELETE( instance, resource->path );
+                AE_DELETE_STRING( instance, resource->path );
 
                 if( resource->uv != instance->sprite_uv )
                 {
-                    AE_DELETE( instance, resource->uv );
+                    AE_DELETEN( instance, resource->uv );
                 }
 
                 if( resource->mesh != AE_NULL )
@@ -182,7 +182,7 @@ ae_void_t ae_delete_movie_data( const aeMovieData * _movieData )
             {
                 const aeMovieResourceParticle * resource = (const aeMovieResourceParticle *)base_resource;
 
-                AE_DELETE( instance, resource->path );
+                AE_DELETE_STRING( instance, resource->path );
 
                 (*_movieData->resource_deleter)(type, base_resource->data, _movieData->resource_ud);
 
@@ -211,7 +211,7 @@ ae_void_t ae_delete_movie_data( const aeMovieData * _movieData )
         {
             const aeMovieCompositionCamera * camera = composition->camera;
 
-            AE_DELETE( instance, camera->name );
+            AE_DELETE_STRING( instance, camera->name );
 
             AE_DELETE( instance, composition->camera );
         }
@@ -277,9 +277,9 @@ ae_void_t ae_delete_movie_data( const aeMovieData * _movieData )
             {
                 const aeMovieLayerShader * shader = extensions->shader;
 
-                AE_DELETE( instance, shader->name );
-                AE_DELETE( instance, shader->shader_vertex );
-                AE_DELETE( instance, shader->shader_fragment );
+                AE_DELETE_STRING( instance, shader->name );
+                AE_DELETE_STRING( instance, shader->shader_vertex );
+                AE_DELETE_STRING( instance, shader->shader_fragment );
 
                 const struct aeMovieLayerShaderParameter ** it_parameter = shader->parameters;
                 const struct aeMovieLayerShaderParameter ** it_parameter_end = shader->parameters + shader->parameter_count;
@@ -290,7 +290,7 @@ ae_void_t ae_delete_movie_data( const aeMovieData * _movieData )
                 {
                     const struct aeMovieLayerShaderParameter * parameter = *it_parameter;
 
-                    AE_DELETE( instance, parameter->name );
+                    AE_DELETE_STRING( instance, parameter->name );
 
                     aeMovieShaderParameterTypeEnum parameter_type = parameter->type;
 
@@ -338,12 +338,12 @@ ae_void_t ae_delete_movie_data( const aeMovieData * _movieData )
 
             AE_DELETE( instance, layer->transformation );
 
-            AE_DELETE( instance, layer->name );
+            AE_DELETE_STRING( instance, layer->name );
         }
 
         AE_DELETEN( instance, composition->layers );
 
-        AE_DELETE( instance, composition->name );
+        AE_DELETE_STRING( instance, composition->name );
     }
 
     AE_DELETEN( instance, _movieData->resources );
@@ -351,7 +351,7 @@ ae_void_t ae_delete_movie_data( const aeMovieData * _movieData )
 
     if( _movieData->name != AE_NULL )
     {
-        AE_DELETE( instance, _movieData->name );
+        AE_DELETE_STRING( instance, _movieData->name );
     }
 
     AE_DELETE( instance, _movieData );
@@ -1416,7 +1416,7 @@ ae_void_t ae_delete_movie_stream( aeMovieStream * _stream )
     AE_DELETE( _stream->instance, _stream );
 }
 //////////////////////////////////////////////////////////////////////////
-AE_INTERNAL ae_result_t __check_movie_data( aeMovieStream * _stream )
+AE_INTERNAL ae_result_t __check_movie_data( aeMovieStream * _stream, ae_uint32_t * _version )
 {
     ae_uint8_t magic[4];
     AE_READN( _stream, magic, 4 );
@@ -1432,8 +1432,10 @@ AE_INTERNAL ae_result_t __check_movie_data( aeMovieStream * _stream )
     ae_uint32_t version;
     AE_READ( _stream, version );
 
+    *_version = version;
+
     if( version != ae_movie_version )
-    {
+    {        
         AE_RETURN_ERROR_RESULT( AE_RESULT_INVALID_VERSION );
     }
 
@@ -1455,11 +1457,16 @@ AE_INTERNAL ae_result_t __check_movie_data( aeMovieStream * _stream )
     return AE_RESULT_SUCCESSFUL;
 }
 //////////////////////////////////////////////////////////////////////////
-ae_result_t ae_check_movie_data( aeMovieStream * _stream )
+ae_result_t ae_check_movie_data( aeMovieStream * _stream, ae_uint32_t * _version )
 {
-    ae_result_t result = __check_movie_data( _stream );
+    ae_result_t result = __check_movie_data( _stream, _version );
 
     return result;
+}
+//////////////////////////////////////////////////////////////////////////
+ae_uint32_t ae_get_movie_version( ae_void_t )
+{
+    return ae_movie_version;
 }
 //////////////////////////////////////////////////////////////////////////
 const ae_char_t * ae_get_result_string_info( ae_result_t _result )
@@ -1499,7 +1506,7 @@ const ae_char_t * ae_get_result_string_info( ae_result_t _result )
     return "invalid result";
 }
 //////////////////////////////////////////////////////////////////////////
-ae_result_t ae_load_movie_data( aeMovieData * _movieData, aeMovieStream * _stream )
+ae_result_t ae_load_movie_data( aeMovieData * _movieData, aeMovieStream * _stream, ae_uint32_t * _version )
 {
     const aeMovieInstance * instance = _movieData->instance;
 
@@ -1507,7 +1514,7 @@ ae_result_t ae_load_movie_data( aeMovieData * _movieData, aeMovieStream * _strea
     instance->logger( instance->instance_data, AE_ERROR_STREAM, "begin" );
 #endif
 
-    ae_result_t check_result = __check_movie_data( _stream );
+    ae_result_t check_result = __check_movie_data( _stream, _version );
 
     if( check_result != AE_RESULT_SUCCESSFUL )
     {
