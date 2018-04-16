@@ -1,9 +1,9 @@
-#	include "movie/movie.h"
+#include "movie/movie.h"
 
-#	include <stdlib.h>
-#	include <stdio.h>
-#	include <stdarg.h>
-#	include <memory.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <memory.h>
 
 //////////////////////////////////////////////////////////////////////////
 AE_CALLBACK ae_voidptr_t stdlib_movie_alloc( ae_voidptr_t _data, ae_size_t _size )
@@ -66,12 +66,13 @@ AE_CALLBACK ae_void_t __memory_copy( ae_voidptr_t _data, ae_constvoidptr_t _src,
 	memcpy( _dst, _src, _size );
 }
 
-AE_CALLBACK ae_voidptr_t __resource_provider( const aeMovieResource * _resource, ae_voidptr_t _data )
+AE_CALLBACK ae_bool_t __resource_provider( const aeMovieResource * _resource, ae_voidptrptr_t _rd, ae_voidptr_t _data )
 {
     AE_UNUSED( _resource );
+    AE_UNUSED( _rd );
     AE_UNUSED( _data );
 
-	return AE_NULL;
+	return AE_TRUE;
 }
 
 AE_CALLBACK ae_void_t __resource_deleter( aeMovieResourceTypeEnum _type, ae_voidptr_t _data, ae_voidptr_t _ud )
@@ -103,8 +104,9 @@ int main( int argc, char *argv[] )
 	//stream.memory_copy = &memory_copy;
 	//stream.data = f;
 
-    ae_uint32_t load_version;
-    ae_result_t load_result = ae_load_movie_data( movieData, stream, &load_version );
+    ae_uint32_t major_version;
+    ae_uint32_t minor_version;
+    ae_result_t load_result = ae_load_movie_data( movieData, stream, &major_version, &minor_version );
 
 	if( load_result != AE_RESULT_SUCCESSFUL )
 	{

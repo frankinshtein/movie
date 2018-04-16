@@ -1,10 +1,39 @@
+/******************************************************************************
+* libMOVIE Software License v1.0
+*
+* Copyright (c) 2016-2018, Yuriy Levchenko <irov13@mail.ru>
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the libMOVIE
+* software and derivative works solely for personal or internal
+* use. Without the written permission of Yuriy Levchenko, you may not (a) modify, translate,
+* adapt, or develop new applications using the libMOVIE or otherwise
+* create derivative works or improvements of the libMOVIE or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY YURIY LEVCHENKO "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL YURIY LEVCHENKO BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION,
+* OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+* OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+* ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
+
 #ifndef MOVIE_MOVIE_NODE_H_
 #define MOVIE_MOVIE_NODE_H_
 
-#	include "movie_type.h"
-#	include "movie_typedef.h"
-#	include "movie_instance.h"
-#	include "movie_data.h"
+#include "movie_type.h"
+#include "movie_typedef.h"
+#include "movie_instance.h"
+#include "movie_data.h"
 
 /**
 @addtogroup data_types
@@ -161,7 +190,7 @@ typedef struct aeMovieCameraProviderCallbackData
 typedef struct aeMovieCameraDeleterCallbackData
 {
     /// @brief Camera element data.
-    ae_voidptr_t element;
+    ae_voidptr_t camera_data;
 
     /// @brief Camera name.
     const ae_char_t * name;
@@ -170,7 +199,7 @@ typedef struct aeMovieCameraDeleterCallbackData
 typedef struct aeMovieCameraUpdateCallbackData
 {
     /// @brief Camera element data.
-    ae_voidptr_t element;
+    ae_voidptr_t camera_data;
 
     /// @brief Camera name.
     const ae_char_t * name;
@@ -364,26 +393,24 @@ typedef struct aeMovieCompositionStateCallbackData
     const aeMovieSubComposition * subcomposition;
 } aeMovieCompositionStateCallbackData;
 
-typedef ae_voidptr_t( *ae_movie_callback_camera_provider_t )(const aeMovieCameraProviderCallbackData * _callbackData, ae_voidptr_t _data);
-typedef void( *ae_movie_callback_camera_deleter_t )(const aeMovieCameraDeleterCallbackData * _callbackData, ae_voidptr_t _data);
-typedef void( *ae_movie_callback_camera_update_t )(const aeMovieCameraUpdateCallbackData * _callbackData, ae_voidptr_t _data);
+typedef ae_bool_t( *ae_movie_callback_camera_provider_t )(const aeMovieCameraProviderCallbackData * _callbackData, ae_voidptrptr_t _cd, ae_voidptr_t _ud);
+typedef ae_void_t( *ae_movie_callback_camera_deleter_t )(const aeMovieCameraDeleterCallbackData * _callbackData, ae_voidptr_t _ud);
+typedef ae_void_t( *ae_movie_callback_camera_update_t )(const aeMovieCameraUpdateCallbackData * _callbackData, ae_voidptr_t _ud);
 
-typedef ae_voidptr_t( *ae_movie_callback_node_provider_t )(const aeMovieNodeProviderCallbackData * _callbackData, ae_voidptr_t _data);
-typedef void( *ae_movie_callback_node_deleter_t )(const aeMovieNodeDeleterCallbackData * _callbackData, ae_voidptr_t _data);
-typedef void( *ae_movie_callback_node_update_t )(const aeMovieNodeUpdateCallbackData * _callbackData, ae_voidptr_t _data);
+typedef ae_bool_t( *ae_movie_callback_node_provider_t )(const aeMovieNodeProviderCallbackData * _callbackData, ae_voidptrptr_t _nd, ae_voidptr_t _ud);
+typedef ae_void_t( *ae_movie_callback_node_deleter_t )(const aeMovieNodeDeleterCallbackData * _callbackData, ae_voidptr_t _ud);
+typedef ae_void_t( *ae_movie_callback_node_update_t )(const aeMovieNodeUpdateCallbackData * _callbackData, ae_voidptr_t _ud);
 
-typedef ae_voidptr_t( *ae_movie_callback_track_matte_provider_t )(const aeMovieTrackMatteProviderCallbackData * _callbackData, ae_voidptr_t _data);
-typedef void( *ae_movie_callback_track_matte_deleter_t )(const aeMovieTrackMatteDeleterCallbackData * _callbackData, ae_voidptr_t _data);
-typedef void( *ae_movie_callback_track_matte_update_t )(const aeMovieTrackMatteUpdateCallbackData * _callbackData, ae_voidptr_t _data);
+typedef ae_bool_t( *ae_movie_callback_track_matte_provider_t )(const aeMovieTrackMatteProviderCallbackData * _callbackData, ae_voidptrptr_t _tmd, ae_voidptr_t _ud);
+typedef ae_void_t( *ae_movie_callback_track_matte_deleter_t )(const aeMovieTrackMatteDeleterCallbackData * _callbackData, ae_voidptr_t _ud);
+typedef ae_void_t( *ae_movie_callback_track_matte_update_t )(const aeMovieTrackMatteUpdateCallbackData * _callbackData, ae_voidptr_t _ud);
 
+typedef ae_bool_t( *ae_movie_callback_shader_provider_t )(const aeMovieShaderProviderCallbackData * _callbackData, ae_voidptrptr_t _sd, ae_voidptr_t _ud);
+typedef ae_void_t( *ae_movie_callback_shader_deleter_t )(const aeMovieShaderDeleterCallbackData * _callbackData, ae_voidptr_t _ud);
+typedef ae_void_t( *ae_movie_callback_shader_property_update_t )(const aeMovieShaderPropertyUpdateCallbackData * _callbackData, ae_voidptr_t _ud);
 
-typedef ae_voidptr_t( *ae_movie_callback_shader_provider_t )(const aeMovieShaderProviderCallbackData * _callbackData, ae_voidptr_t _data);
-typedef void( *ae_movie_callback_shader_deleter_t )(const aeMovieShaderDeleterCallbackData * _callbackData, ae_voidptr_t _data);
-typedef void( *ae_movie_callback_shader_property_update_t )(const aeMovieShaderPropertyUpdateCallbackData * _callbackData, ae_voidptr_t _data);
-
-
-typedef void( *ae_movie_callback_composition_event_t )(const aeMovieCompositionEventCallbackData * _callbackData, ae_voidptr_t _data);
-typedef void( *ae_movie_callback_composition_state_t )(const aeMovieCompositionStateCallbackData * _callbackData, ae_voidptr_t _data);
+typedef ae_void_t( *ae_movie_callback_composition_event_t )(const aeMovieCompositionEventCallbackData * _callbackData, ae_voidptr_t _ud);
+typedef ae_void_t( *ae_movie_callback_composition_state_t )(const aeMovieCompositionStateCallbackData * _callbackData, ae_voidptr_t _ud);
 
 typedef struct aeMovieCompositionProviders
 {
@@ -884,6 +911,19 @@ ae_void_t ae_set_movie_sub_composition_loop( const aeMovieSubComposition * _subc
 @return TRUE if sub-composition playback is looped.
 */
 ae_bool_t ae_get_movie_sub_composition_loop( const aeMovieSubComposition * _subcomposition );
+
+/**
+@brief Set whether a sub-composition is enable or not.
+@param [in] _subcomposition Sub-composition.
+@param [in] _loop If TRUE, playback will be looped.
+*/
+ae_void_t ae_set_movie_sub_composition_enable( const aeMovieSubComposition * _subcomposition, ae_bool_t _enable );
+
+/**
+@param [in] _subcomposition Sub-composition.
+@return TRUE if sub-composition playback is enable.
+*/
+ae_bool_t ae_get_movie_sub_composition_enable( const aeMovieSubComposition * _subcomposition );
 
 /**
 @brief Set playback area of a sub-composition in milliseconds.
