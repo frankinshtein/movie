@@ -606,6 +606,8 @@ ae_void_t ae_get_movie_composition_in_out_loop( const aeMovieComposition * _comp
 */
 ae_void_t ae_update_movie_composition( aeMovieComposition * _composition, ae_time_t _timing );
 
+ae_void_t ae_update_movie_subcompositions(aeMovieComposition * _composition, ae_time_t _timing);
+ae_void_t ae_update_movie_composition_main(aeMovieComposition * _composition, ae_time_t _timing);
 // compositions
 /// @}
 

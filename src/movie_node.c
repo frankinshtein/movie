@@ -3257,6 +3257,68 @@ AE_INTERNAL ae_bool_t __update_movie_subcomposition( aeMovieComposition * _compo
     return AE_FALSE;
 }
 //////////////////////////////////////////////////////////////////////////
+
+ae_void_t ae_update_movie_subcompositions(aeMovieComposition * _composition, ae_time_t _timing)
+{
+    ae_time_t timescale_timing = AE_TIME_INSCALE(_timing);
+    __inc_composition_update_revision(_composition);
+
+    aeMovieCompositionAnimation * animation = _composition->animation;
+    
+    const aeMovieSubComposition *it_subcomposition = _composition->subcompositions;
+    const aeMovieSubComposition *it_subcomposition_end = _composition->subcompositions + _composition->subcomposition_count;
+    for (; it_subcomposition != it_subcomposition_end; ++it_subcomposition)
+    {
+        const aeMovieSubComposition * subcomposition = it_subcomposition;
+
+        aeMovieCompositionAnimation * subcomposition_animation = subcomposition->animation;
+
+        ae_float_t subcomposition_timing = timescale_timing;
+
+        if (subcomposition_animation->play == AE_FALSE || subcomposition_animation->pause == AE_TRUE)
+        {
+            subcomposition_timing = 0.f;
+        }
+
+        ae_bool_t subcomposition_end = __update_movie_subcomposition(_composition, subcomposition->composition_data, subcomposition_timing, subcomposition_animation, subcomposition);
+
+        if (subcomposition_end == AE_TRUE)
+        {
+            aeMovieCompositionStateCallbackData callbackData;
+            callbackData.state = AE_MOVIE_COMPOSITION_END;
+            callbackData.subcomposition = subcomposition;
+
+            (*_composition->providers.composition_state)(&callbackData, _composition->provider_data);
+        }
+    }
+}
+
+ae_void_t ae_update_movie_composition_main(aeMovieComposition * _composition, ae_time_t _timing)
+{
+    ae_time_t timescale_timing = AE_TIME_INSCALE(_timing);
+    __inc_composition_update_revision(_composition);
+
+    aeMovieCompositionAnimation * animation = _composition->animation;
+    const aeMovieCompositionData * composition_data = _composition->composition_data;
+
+    ae_bool_t composition_end = AE_FALSE;
+    if (animation->play == AE_TRUE && animation->pause == AE_FALSE)
+    {
+        composition_end = __update_movie_subcomposition(_composition, composition_data, timescale_timing, animation, AE_NULL);
+        __update_movie_camera(_composition, animation);
+    }
+    
+
+    if (composition_end == AE_TRUE)
+    {
+        aeMovieCompositionStateCallbackData callbackData;
+        callbackData.state = AE_MOVIE_COMPOSITION_END;
+        callbackData.subcomposition = AE_NULL;
+
+        (*_composition->providers.composition_state)(&callbackData, _composition->provider_data);
+    }
+}
+
 ae_void_t ae_update_movie_composition( aeMovieComposition * _composition, ae_time_t _timing )
 {
     ae_time_t timescale_timing = AE_TIME_INSCALE( _timing );
