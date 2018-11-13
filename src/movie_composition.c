@@ -2854,7 +2854,7 @@ AE_INTERNAL ae_void_t __update_node( const aeMovieComposition * _composition, co
 #endif
 
 #ifdef AE_MOVIE_SAFE
-    if( _frameId >= _node->frame_count )
+    if( _frameId >= _node->layer->frame_count )
     {
         return;
     }
